@@ -1,135 +1,136 @@
-![image](https://user-images.githubusercontent.com/3408362/230732083-1c98e451-08af-41c2-b522-126370e8c6a5.png)
+# SurveyChain - Decentralized Survey Platform
 
-# ⚡ TurboETH - Web3 App Starter Kit
+SurveyChain is a Web3 app built on the Constellation Network, leveraging decentralized technology to create, manage, and participate in surveys with enhanced privacy, security, and incentivization.
 
-![CI](https://github.com/turbo-eth/template-web3-app/actions/workflows/ci.yml/badge.svg)
-![TS](https://badgen.net/badge/-/TypeScript?icon=typescript&label&labelColor=blue&color=555555)
-[![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](http://perso.crans.org/besson/LICENSE.html)
+## Table of Contents
 
-Web3 App Template built using Next.js, RainbowKit, Tailwind, Sign-In With Ethereum, and more.
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [Architecture](#architecture)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Environment Variables](#environment-variables)
+- [Usage](#usage)
+  - [Creating a Survey](#creating-a-survey)
+  - [Participating in a Survey](#participating-in-a-survey)
+  - [Retrieving Survey Responses](#retrieving-survey-responses)
+- [Core Technologies](#core-technologies)
+- [Development](#development)
+- [Contributing](#contributing)
+- [License](#license)
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fturbo-eth%2Ftemplate-web3-app&project-name=TurboETH&repository-name=turbo-eth&demo-title=TurboETH&env=NEXTAUTH_SECRET,DATABASE_URL&envDescription=How%20to%20get%20these%20env%20variables%3A&envLink=https%3A%2F%2Fgithub.com%2Fturbo-eth%2Ftemplate-web3-app%2Fblob%integrations%2F.env.example)
+## Overview
 
-### [Documentation](https://docs.turboeth.xyz)
+SurveyChain revolutionizes the way surveys are conducted by leveraging blockchain technology. It offers a decentralized platform where survey data is not controlled by a single entity but distributed across the Constellation Network, ensuring data integrity, participant privacy, and built-in incentivization through token rewards.
 
-- Getting Started
-  - [Environment Variables](https://docs.turboeth.xyz/getting-started/environment)
-  - [JSON-RPC](https://docs.turboeth.xyz/getting-started/json-rpc)
-  - [WAGMI CLI](https://docs.turboeth.xyz/getting-started/wagmi-cli)
-  - [UI Components](https://docs.turboeth.xyz/getting-started/design-system)
-  - [Backend Database](https://docs.turboeth.xyz/getting-started/database)
-- Core Integrations
-  - [🌈 RainbowKit](https://docs.turboeth.xyz/integration/rainbowkit)
-  - [🔏 Sign-In With Ethereum](https://docs.turboeth.xyz/integration/sign-in-with-ethereum)
-- Smart Contract Integrations
-  - [ERC20](https://docs.turboeth.xyz/integration/smart-contract-erc20)
-- API Integrations
-  - [Disco](https://docs.turboeth.xyz/integration/disco)
-  - [Etherscan](https://docs.turboeth.xyz/integration/etherscan)
+## Key Features
 
-# Getting Started
+- Decentralized survey creation and management
+- End-to-end encryption for survey responses
+- Token rewards for survey participation
+- Immutable and tamper-proof survey data
+- Integration with Constellation Network's Metagraph architecture
 
-The `pnpm` CLI is the recommended package manager but `npm` and `yarn` should work too.
+## Architecture
 
-```bash
-pnpm install
+SurveyChain utilizes a two-layer architecture within the Constellation Network:
+
+1. **Layer 1 (Data L1)**: 
+   - Handles incoming survey data
+   - Performs initial validations
+   - Packages data into blocks
+   - Runs DAG-based consensus
+
+2. **Layer 0 (Metagraph L0)**:
+   - Receives blocks from L1
+   - Performs final validation and consensus
+   - Creates snapshots of the survey system state
+   - Submits snapshots to the Global L0
+
+This architecture ensures scalability, security, and decentralization while maintaining privacy and functionality.
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v14 or later)
+- pnpm (recommended) or npm
+
+### Installation
+
+1. Clone the repository:
+   ```
+   git clone https://github.com/your-username/surveychain.git
+   cd surveychain
+   ```
+
+2. Install dependencies:
+   ```
+   pnpm install
+   ```
+
+### Environment Variables
+
+Create a `.env.local` file in the root directory and add the following variables:
+
+```
+NEXT_PUBLIC_NETWORK=mainnet
+NEXT_PUBLIC_METAGRAPH_ID=your-metagraph-id
+ENCRYPT_KEY=your-encryption-key
 ```
 
-#### Development
+## Usage
 
-```bash
+### Creating a Survey
+
+1. Connect your wallet
+2. Navigate to the "Create Survey" page
+3. Fill in survey details and set token reward
+4. Submit the survey to the network
+
+### Participating in a Survey
+
+1. Connect your wallet
+2. Browse available surveys
+3. Select a survey and answer questions
+4. Submit responses to receive token reward
+
+### Retrieving Survey Responses
+
+1. Connect your wallet
+2. Navigate to "My Surveys"
+3. Select a survey to view encrypted responses
+4. Decrypt responses using your private key
+
+## Core Technologies
+
+- **Constellation Network**: The underlying blockchain platform
+- **Next.js**: React framework for building the web application
+- **RainbowKit**: Wallet connection manager
+- **Sign-In With Ethereum**: Account authentication
+- **TailwindCSS**: Utility-first CSS framework
+- **Framer Motion**: Animation library for React
+- **Prisma**: Database ORM for storing off-chain data
+
+## Development
+
+To start the development server:
+
+```
 pnpm dev
 ```
 
-#### Build
+To build the application:
 
-```bash
+```
 pnpm build
 ```
 
-### Web3 Core
+## Contributing
 
-- [WAGMI CLI](https://wagmi.sh/cli/getting-started) - Automatic React Hook Generation
-- [RainbowKit](https://www.rainbowkit.com/) - Wallet connection manager
-- [Sign-In With Ethereum](https://login.xyz/) - Account authentication
+We welcome contributions to SurveyChain! Please see our [Contributing Guidelines](CONTRIBUTING.md) for more information.
 
-### Web2 Frameworks
+## License
 
-- [Vercel](https://vercel.com/) - App Infrastructure
-- [Prisma](https://www.prisma.io/) - Database ORM
-
-### Developer Experience
-
-- [TypeScript](https://www.typescriptlang.org/) – Static type checker for end-to-end typesafety
-- [Prettier](https://prettier.io/) – Opinionated code formatter for consistent code style
-- [ESLint](https://eslint.org/) – Pluggable linter for Next.js and TypeScript
-
-### User Interface
-
-- [TailwindCSS](https://tailwindcss.com) – Utility-first CSS framework for rapid UI development
-- [Radix](https://www.radix-ui.com/) – Primitives like modal, popover, etc. to build a stellar user experience
-- [Framer Motion](https://www.framer.com/motion/) – Motion library for React to animate components with ease
-- [React Icons](https://react-icons.github.io/react-icons) – Beautifully simple, pixel-perfect icons
-
-The [ui.shadcn.com](https://ui.shadcn.com) components are included in the `/components/shared/ui` folder.
-
-# 💻 Developer Experience
-
-### 🐕 What is husky
-
-Husky improves your git commits.
-
-You can use it to lint your commit messages, run tests, lint code, etc... when you commit or push. Husky supports all Git hooks.
-
-#### 🪝 Hooks
-
-- pre-commit: lint app codebase
-- commit-msg: apply commintlint
-
-### 📋 What is commitlint
-
-commitlint checks if your commit messages meet the [conventional commit format](https://conventionalcommits.org).
-
-In general the pattern mostly looks like this:
-
-```sh
-type(scope?): subject  #scope is optional; multiple scopes are supported (current delimiter options: "/", "\" and ",")
-```
-
-Real world examples can look like this:
-
-```
-chore: run tests on travis ci
-```
-
-```
-fix(server): send cors headers
-```
-
-```
-feat(blog): add comment section
-```
-
-Common types according to [commitlint-config-conventional (based on the Angular convention)](https://github.com/conventional-changelog/commitlint/tree/master/@commitlint/config-conventional#type-enum) can be:
-
-- build
-- chore
-- ci
-- docs
-- feat
-- fix
-- perf
-- refactor
-- revert
-- style
-- test
-
-# Acknowledgements
-
-Original template was forked from https://github.com/wslyvh/nexth
-
-Thank you @wslyvh 🙏
-
-<hr/>
-
-Copyright 2023 [Kames Geraghty](https://twitter.com/KamesGeraghty)
+SurveyChain is released under the [MIT License](LICENSE).
