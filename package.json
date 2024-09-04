@@ -17,18 +17,7 @@
     "format": "prettier . --list-different",
     "format-fix": "prettier . --write",
     "run-ci": "concurrently -c \"auto\" -p \"name\" -n \"format,lint\" \"pnpm format\"  \"pnpm lint\"  ",
-    "prepare": "husky install ; prisma generate ; wagmi generate"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
-  },
-  "lint-staged": {
-    "./src": [
-      "lint",
-      "prettier"
-    ]
+    "prepare": "prisma generate && wagmi generate"
   },
   "engines": {
     "npm": ">=7.0.0",
@@ -143,7 +132,6 @@
     "eslint-plugin-tailwindcss": "^3.5.0",
     "eslint-plugin-testing-library": "^5.5.1",
     "eslint-plugin-unused-imports": "^2.0.0",
-    "husky": "^8.0.2",
     "lint-staged": "^13.1.0",
     "postcss": "^8.4.19",
     "prettier": "^2.8.1",
