@@ -9,6 +9,7 @@ import { fontSans } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
 import { Toaster } from "@/components/ui/toaster"
 import RootProvider from "@/components/providers/root-provider"
+import { ThemeProvider } from "@/components/providers/ThemeProvider"
 
 const url = env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
 
@@ -37,18 +38,18 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <>
-      <html lang="en" suppressHydrationWarning>
-        <body
-          className={cn(
-            "min-h-screen bg-background font-sans antialiased",
-            fontSans.variable
-          )}
-        >
+    <html lang="en" suppressHydrationWarning>
+      <body
+        className={cn(
+          "min-h-screen bg-base-100 font-sans antialiased",
+          fontSans.variable
+        )}
+      >
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <RootProvider>{children}</RootProvider>
           <Toaster />
-        </body>
-      </html>
-    </>
+        </ThemeProvider>
+      </body>
+    </html>
   )
 }

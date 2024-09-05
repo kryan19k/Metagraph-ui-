@@ -1,9 +1,11 @@
 "use client"
 
 import Link from "next/link"
+import { motion } from "framer-motion"
 
 import useScroll from "@/lib/hooks/use-scroll"
 import { cn } from "@/lib/utils"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { buttonVariants } from "@/components/ui/button"
 import { MainNav } from "@/components/layout/main-nav"
 import { MobileNav } from "@/components/layout/mobile-nav"
@@ -22,13 +24,30 @@ export function SiteHeader() {
       <div className="container flex h-20 items-center">
         <MainNav />
         <MobileNav />
+        <div className="flex items-center space-x-4 pr-4">
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <button className="btn btn-outline btn-primary">
+                <Link href="/surveyCreation">Create Survey</Link>
+              </button>
+            </motion.div>
+          </motion.div>
+        </div>
         <div className="hidden flex-1 items-center justify-between space-x-2 md:flex md:justify-end">
-          <Link
-            href="/dashboard"
-            className={buttonVariants({ variant: "ghost" })}
-          >
-            Dashboard
-          </Link>
+          <button className="btn btn-outline btn-primary">
+            <Link href="/dashboard">Dashboard</Link>
+          </button>
+          <div className="flex items-center space-x-4">
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Avatar>
+                <AvatarImage
+                  src="https://github.com/shadcn.png"
+                  alt="@shadcn"
+                />
+                <AvatarFallback>CN</AvatarFallback>
+              </Avatar>
+            </motion.div>
+          </div>
           <ModeToggle />
         </div>
       </div>

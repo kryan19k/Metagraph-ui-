@@ -65,7 +65,7 @@ export function MobileNav() {
             <LightDarkImage
               LightImage="/logo-dark.png"
               DarkImage="/logo-light.png"
-              alt="TurboETH"
+              alt="SurveyChain"
               height={32}
               width={32}
             />

@@ -3,6 +3,10 @@
 import React from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
+
+import { siteConfig } from "@/config/site"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -12,17 +16,14 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { LightDarkImage } from "@/components/shared/light-dark-image"
-import { LinkComponent } from "../shared/link-component"
 
-import { siteConfig } from "@/config/site"
+import { LinkComponent } from "../shared/link-component"
 
 export function MainNav() {
   return (
-    <div className="flex items-center justify-between w-full">
+    <div className="flex w-full items-center justify-between">
       <div className="flex items-center">
         <Link href="/" className="mr-6 flex items-center space-x-2">
           <LightDarkImage
@@ -41,29 +42,9 @@ export function MainNav() {
           <MainNavMenu />
         </nav>
       </div>
-      <div className="flex items-center space-x-4">
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <Button asChild variant="ghost">
-            <Link href="/dashboard">Dashboard</Link>
-          </Button>
-        </motion.div>
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <Avatar>
-            <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
-            <AvatarFallback>CN</AvatarFallback>
-          </Avatar>
-        </motion.div>
-      </div>
     </div>
   )
 }
-
 
 function MainNavMenu() {
   return (
@@ -87,7 +68,7 @@ function MainNavMenu() {
                       height={64}
                       width={64}
                     />
-                    <div className="mt-4 mb-2 text-lg font-medium text-white">
+                    <div className="mb-2 mt-4 text-lg font-medium text-white">
                       SurveyChain
                     </div>
                     <p className="text-sm leading-tight text-white/90">
@@ -96,7 +77,7 @@ function MainNavMenu() {
                   </a>
                 </NavigationMenuLink>
               </li>
-              <ListItem href="/create" title="Create Survey">
+              <ListItem href="/surveyCreation" title="Create Survey">
                 Start a new survey and reach your audience
               </ListItem>
               <ListItem href="/my-surveys" title="My Surveys">

@@ -1,18 +1,36 @@
 "use client"
 
 import { useTheme } from "next-themes"
+import {
+  FaCircleNodes,
+  FaCode,
+  FaCube,
+  FaMicrochip,
+  FaNetworkWired,
+} from "react-icons/fa6"
 import { LuLaptop, LuMoon, LuSun } from "react-icons/lu"
 
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
 export function ModeToggle() {
-  const { setTheme } = useTheme()
+  const { setTheme, theme } = useTheme()
+
+  const themes = [
+    { value: "light", label: "Light", icon: LuSun },
+    { value: "dark", label: "Dark", icon: LuMoon },
+    { value: "system", label: "System", icon: LuLaptop },
+    { value: "cyberpunk", label: "Cyberpunk", icon: FaCube },
+    { value: "synthwave", label: "Synthwave", icon: FaCircleNodes },
+    { value: "night", label: "Night", icon: FaNetworkWired },
+    { value: "corporate", label: "Corporate", icon: FaMicrochip },
+    { value: "wireframe", label: "Wireframe", icon: FaCode },
+  ]
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -22,19 +40,25 @@ export function ModeToggle() {
           <span className="sr-only">Toggle theme</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme("light")}>
-          <LuSun className="mr-2 h-4 w-4" />
-          Light
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")}>
-          <LuMoon className="mr-2 h-4 w-4" />
-          Dark
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("system")}>
-          <LuLaptop className="mr-2 h-4 w-4" />
-          System
-        </DropdownMenuItem>
+      <DropdownMenuContent align="end" className="w-56">
+        {themes.map((t) => (
+          <div key={t.value} className="form-control">
+            <label className="label cursor-pointer gap-4">
+              <span className="label-text flex items-center">
+                {t.icon && <t.icon className="mr-2 h-4 w-4" />}
+                {t.label}
+              </span>
+              <input
+                type="radio"
+                name="theme-radios"
+                className="theme-controller radio"
+                value={t.value}
+                checked={theme === t.value}
+                onChange={() => setTheme(t.value)}
+              />
+            </label>
+          </div>
+        ))}
       </DropdownMenuContent>
     </DropdownMenu>
   )
