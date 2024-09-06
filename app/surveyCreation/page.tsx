@@ -52,6 +52,14 @@ const surveySchema = z.object({
 
 type SurveyFormData = z.infer<typeof surveySchema>
 
+// Define a schema for the expected response
+const surveyResponseSchema = z.object({
+  id: z.string(),
+  // Add other fields as necessary
+})
+
+type SurveyResponse = z.infer<typeof surveyResponseSchema>
+
 export default function SurveyCreationPage() {
   const { address } = useAccount()
   const { openConnectModal } = useConnectModal()
@@ -113,8 +121,10 @@ export default function SurveyCreationPage() {
     try {
       const surveyData = {
         creator: address,
-        questions: data.questions.map((q) => q.text),
-        tokenReward: ethers.utils.parseEther(data.tokenReward).toString(),
+        title: data.title,
+        description: data.description,
+        questions: data.questions,
+        tokenReward: data.tokenReward,
         imageUri: data.imageUri || "",
       }
 
@@ -131,13 +141,28 @@ export default function SurveyCreationPage() {
       }
 
       const result = await response.json()
-      toast({
-        title: "Survey created successfully!",
-        description: `Survey ID: ${result.surveyId as string}`,
-        variant: "default",
-      })
+
+      // Validate the response
+      const parsedResult = surveyResponseSchema.safeParse(result)
+
+      if (parsedResult.success) {
+        const surveyResponse: SurveyResponse = parsedResult.data
+        toast({
+          title: "Survey created successfully!",
+          description: `Survey ID: ${surveyResponse.id}`,
+          variant: "default",
+        })
+      } else {
+        console.error("Invalid response format:", parsedResult.error)
+        toast({
+          title: "Survey created, but couldn't retrieve ID",
+          description: "Please check the surveys list for your new survey.",
+          variant: "default", // Changed from "warning" to "default"
+        })
+      }
+
       // Optionally, redirect to the survey details page
-      // router.push(`/surveys/${result.surveyId}`)
+      // router.push(`/surveys/${surveyResponse.id}`)
     } catch (error) {
       toast({
         title: "Error creating survey",
@@ -305,11 +330,7 @@ export default function SurveyCreationPage() {
                       placeholder="Enter question text"
                       className="input input-bordered w-full"
                     />
-                    {errors.questions?.[index]?.text && (
-                      <span className="text-error">
-                        {errors.questions[index].text.message}
-                      </span>
-                    )}
+                    {errors.questions?.[index]?.text?.message}
                   </div>
 
                   <div className="form-control">

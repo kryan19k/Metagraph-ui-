@@ -28,6 +28,15 @@ export function SiteHeader() {
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <button className="btn btn-outline btn-primary">
+                <Link href="/surveyParticipation">Explore</Link>
+              </button>
+            </motion.div>
+          </motion.div>
+        </div>
+        <div className="flex items-center space-x-4 pr-4">
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <button className="btn btn-outline btn-primary">
                 <Link href="/surveyCreation">Create Survey</Link>
               </button>
             </motion.div>

@@ -83,7 +83,7 @@ function MainNavMenu() {
               <ListItem href="/my-surveys" title="My Surveys">
                 Manage and analyze your existing surveys
               </ListItem>
-              <ListItem href="/explore" title="Explore">
+              <ListItem href="/SurveyParticipation" title="Explore">
                 Discover and participate in public surveys
               </ListItem>
             </ul>
