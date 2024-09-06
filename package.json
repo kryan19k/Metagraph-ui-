@@ -10,6 +10,7 @@
   ],
   "scripts": {
     "dev": "next dev",
+    "install": "npm install",
     "build": "next build",
     "start": "next start",
     "lint": "eslint '**/*.{ts,tsx}'",
