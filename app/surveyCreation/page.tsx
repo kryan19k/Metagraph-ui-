@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useConnectModal } from "@rainbow-me/rainbowkit"
 import { ethers } from "ethers"
-import { motion } from "framer-motion"
+import { AnimatePresence, motion } from "framer-motion"
 import { useFieldArray, useForm } from "react-hook-form"
 import {
   FiDollarSign,
@@ -47,7 +47,12 @@ const surveySchema = z.object({
     )
     .min(1, "At least one question is required"),
   tokenReward: z.string().min(1, "Token reward is required"),
-  imageUri: z.string().url("Invalid image URL").optional(),
+  imageUri: z
+    .instanceof(File)
+    .optional()
+    .refine((file) => file === undefined || file.size <= 5000000, {
+      message: "Image must be less than 5MB",
+    }),
 })
 
 type SurveyFormData = z.infer<typeof surveySchema>
@@ -80,7 +85,7 @@ export default function SurveyCreationPage() {
       description: "",
       questions: [{ text: "", type: "text", options: [] }],
       tokenReward: "",
-      imageUri: "",
+      imageUri: undefined,
     },
   })
 
@@ -199,290 +204,356 @@ export default function SurveyCreationPage() {
   }
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto min-h-screen bg-base-200 p-4">
       <motion.div
         initial="hidden"
         animate="show"
         viewport={{ once: true }}
         variants={FADE_DOWN_ANIMATION_VARIANTS}
       >
-        <h1 className="mb-6 text-3xl font-bold">Create a New Survey</h1>
+        <div className="mb-8 text-center">
+          <h1 className="mb-2 text-4xl font-bold">Create Your Survey</h1>
+          <p className="text-xl text-base-content/70">
+            Design, reward, and launch your survey in minutes
+          </p>
+        </div>
 
         <IsWalletConnected>
-          <div className="mb-4 flex items-center space-x-4">
-            <WalletAddress />
-            <WalletBalance />
-            <WalletEnsName />
-            <div className="text-sm">Reward Balance: {userRewards} DAG</div>
-          </div>
+          <motion.div
+            className="card mb-8 bg-base-100 shadow-xl"
+            whileHover={{ scale: 1.02 }}
+            transition={{ type: "spring", stiffness: 300 }}
+          >
+            <div className="card-body">
+              <h2 className="card-title mb-4">Your Wallet</h2>
+              <div className="flex flex-wrap items-center gap-4">
+                <WalletAddress />
+                <WalletBalance />
+                <WalletEnsName />
+                <div className="badge badge-primary badge-lg">
+                  Reward Balance: {userRewards} DAG
+                </div>
+              </div>
+            </div>
+          </motion.div>
         </IsWalletConnected>
 
         <IsWalletDisconnected>
-          <p className="mb-4">Please connect your wallet to create a survey.</p>
+          <div className="alert alert-warning mb-8 shadow-lg">
+            <div>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6 shrink-0 stroke-current"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+              <span>Please connect your wallet to create a survey.</span>
+            </div>
+          </div>
         </IsWalletDisconnected>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <div className="form-control">
-            <label className="label" htmlFor="title">
-              <span className="label-text">Survey Title</span>
-            </label>
-            <input
-              id="title"
-              type="text"
-              {...register("title")}
-              placeholder="Enter survey title"
-              className="input input-bordered input-primary w-full"
-            />
-            {errors.title && (
-              <span className="text-error">{errors.title.message}</span>
-            )}
-          </div>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+          <motion.div
+            className="card bg-base-100 shadow-xl"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <div className="card-body">
+              <h2 className="card-title mb-4">Survey Details</h2>
 
-          <div className="form-control">
-            <label className="label" htmlFor="description">
-              <span className="label-text">Survey Description</span>
-            </label>
-            <textarea
-              id="description"
-              {...register("description")}
-              placeholder="Enter survey description"
-              className="textarea textarea-primary h-24"
-            />
-            {errors.description && (
-              <span className="text-error">{errors.description.message}</span>
-            )}
-          </div>
+              <div className="form-control">
+                <label className="label" htmlFor="title">
+                  <span className="label-text">Survey Title</span>
+                </label>
+                <input
+                  id="title"
+                  type="text"
+                  {...register("title")}
+                  placeholder="Enter an engaging title for your survey"
+                  className="input input-bordered input-primary w-full"
+                />
+                {errors.title && (
+                  <span className="mt-1 text-error">
+                    {errors.title.message}
+                  </span>
+                )}
+              </div>
 
-          <div className="form-control">
-            <label className="label" htmlFor="tokenReward">
-              <span className="label-text">Token Reward (DAG)</span>
-            </label>
-            <div className="flex items-center">
-              <input
-                id="tokenReward"
-                type="text"
-                {...register("tokenReward")}
-                placeholder="Enter token reward amount"
-                className="input input-bordered input-primary w-full"
-              />
-              <span className="btn btn-square">
-                <FiDollarSign className="h-5 w-5" />
-              </span>
-            </div>
-            {errors.tokenReward && (
-              <span className="text-error">{errors.tokenReward.message}</span>
-            )}
-          </div>
+              <div className="form-control">
+                <label className="label" htmlFor="description">
+                  <span className="label-text">Survey Description</span>
+                </label>
+                <textarea
+                  id="description"
+                  {...register("description")}
+                  placeholder="Describe what your survey is about and why people should participate"
+                  className="textarea textarea-primary h-24"
+                />
+                {errors.description && (
+                  <span className="mt-1 text-error">
+                    {errors.description.message}
+                  </span>
+                )}
+              </div>
 
-          <div className="form-control">
-            <label className="label" htmlFor="imageUri">
-              <span className="label-text">Survey Image URL (optional)</span>
-            </label>
-            <div className="flex items-center">
-              <input
-                id="imageUri"
-                type="text"
-                {...register("imageUri")}
-                placeholder="Enter image URL"
-                className="input input-bordered input-primary w-full"
-              />
-              <span className="btn btn-square ml-2">
-                <FiImage className="h-5 w-5" />
-              </span>
-            </div>
-            {errors.imageUri && (
-              <span className="text-error">{errors.imageUri.message}</span>
-            )}
-          </div>
-
-          <div>
-            <h2 className="mb-4 text-xl font-semibold">Questions</h2>
-            {fields.map((field, index) => (
-              <motion.div
-                key={field.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-                className="mb-4 rounded-lg bg-base-200 p-4"
-              >
-                <div className="mb-2 flex items-center justify-between">
-                  <h3 className="text-lg font-medium">Question {index + 1}</h3>
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm"
-                    onClick={() => remove(index)}
-                  >
-                    <FiTrash2 />
-                  </button>
+              <div className="form-control">
+                <label className="label" htmlFor="tokenReward">
+                  <span className="label-text">Token Reward (DAG)</span>
+                </label>
+                <div className="relative flex items-center">
+                  <input
+                    id="tokenReward"
+                    type="text"
+                    {...register("tokenReward")}
+                    placeholder="Enter reward amount"
+                    className="input input-bordered input-primary w-full pr-12"
+                  />
+                  <span className="btn btn-square btn-primary absolute right-0">
+                    <FiDollarSign className="h-5 w-5" />
+                  </span>
                 </div>
+                {errors.tokenReward && (
+                  <span className="mt-1 text-error">
+                    {errors.tokenReward.message}
+                  </span>
+                )}
+              </div>
 
-                <div className="space-y-4">
-                  <div className="form-control">
-                    <label
-                      className="label"
-                      htmlFor={`questions.${index}.text`}
-                    >
-                      <span className="label-text">Question Text</span>
-                    </label>
-                    <input
-                      {...register(`questions.${index}.text`)}
-                      placeholder="Enter question text"
-                      className="input input-bordered w-full"
-                    />
-                    {errors.questions?.[index]?.text?.message}
-                  </div>
+              <div className="form-control">
+                <label className="label" htmlFor="imageUri">
+                  <span className="label-text">Survey Image (optional)</span>
+                </label>
+                <input
+                  type="file"
+                  id="imageUri"
+                  {...register("imageUri")}
+                  className="file-input file-input-bordered file-input-primary w-full"
+                  accept="image/*"
+                />
+                {errors.imageUri && (
+                  <span className="mt-1 text-error">
+                    {errors.imageUri.message}
+                  </span>
+                )}
+              </div>
+            </div>
+          </motion.div>
 
-                  <div className="form-control">
-                    <label
-                      className="label"
-                      htmlFor={`questions.${index}.type`}
-                    >
-                      <span className="label-text">Question Type</span>
-                    </label>
-                    <select
-                      {...register(`questions.${index}.type`)}
-                      className="select select-bordered w-full"
-                    >
-                      {questionTypes.map((type) => (
-                        <option key={type.value} value={type.value}>
-                          {type.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+          <motion.div
+            className="card bg-base-100 shadow-xl"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <div className="card-body">
+              <h2 className="card-title mb-4">Survey Questions</h2>
 
-                  {["radio", "checkbox"].includes(
-                    watch(`questions.${index}.type`)
-                  ) && (
-                    <div className="form-control">
-                      <label className="label">
-                        <span className="label-text">Options</span>
-                      </label>
-                      <div className="space-y-2">
-                        {field.options?.map((option, optionIndex) => (
-                          <div
-                            key={optionIndex}
-                            className="flex items-center space-x-2"
-                          >
-                            <input
-                              {...register(
-                                `questions.${index}.options.${optionIndex}` as const
-                              )}
-                              placeholder={`Option ${optionIndex + 1}`}
-                              className="input input-bordered input-primary grow"
-                            />
-                            <button
-                              type="button"
-                              className="btn btn-ghost btn-sm"
-                              onClick={() => removeOption(index, optionIndex)}
-                            >
-                              <FiTrash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        ))}
+              <AnimatePresence>
+                {fields.map((field, index) => (
+                  <motion.div
+                    key={field.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                    className="card mb-4 bg-base-200 shadow-md"
+                  >
+                    <div className="card-body">
+                      <div className="mb-4 flex items-center justify-between">
+                        <h3 className="text-lg font-medium">
+                          Question {index + 1}
+                        </h3>
                         <button
                           type="button"
-                          className="btn btn-outline btn-sm"
-                          onClick={() => addOption(index)}
+                          className="btn btn-circle btn-ghost"
+                          onClick={() => remove(index)}
                         >
-                          <FiPlusCircle className="mr-2 h-4 w-4" />
-                          Add Option
+                          <FiTrash2 className="h-5 w-5" />
                         </button>
                       </div>
-                    </div>
-                  )}
 
-                  {watch(`questions.${index}.type`) === "scale" && (
-                    <div className="space-y-4">
-                      <div className="form-control">
-                        <label className="label">
-                          <span className="label-text">Scale Range</span>
-                        </label>
-                        <input
-                          type="range"
-                          min={0}
-                          max={100}
-                          step={1}
-                          className="range range-primary"
-                          {...register(`questions.${index}.max`, {
-                            valueAsNumber: true,
-                          })}
-                          onChange={(e) => {
-                            const value = parseInt(e.target.value, 10)
-                            setValue(`questions.${index}.max`, value)
-                            // Ensure min is always less than or equal to max
-                            const currentMin =
-                              watch(`questions.${index}.min`) || 0
-                            if (currentMin > value) {
-                              setValue(`questions.${index}.min`, value)
-                            }
-                          }}
-                        />
+                      <div className="space-y-4">
+                        {/* Question text input */}
+                        <div className="form-control">
+                          <input
+                            {...register(`questions.${index}.text`)}
+                            placeholder="Enter your question here"
+                            className="input input-bordered w-full"
+                          />
+                          {errors.questions?.[index]?.text?.message && (
+                            <span className="mt-1 text-error">
+                              {errors.questions?.[index]?.text?.message}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Question type select */}
+                        <div className="form-control">
+                          <select
+                            {...register(`questions.${index}.type`)}
+                            className="select select-bordered w-full"
+                          >
+                            {questionTypes.map((type) => (
+                              <option key={type.value} value={type.value}>
+                                {type.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Render options for radio and checkbox questions */}
+                        {["radio", "checkbox"].includes(
+                          watch(`questions.${index}.type`)
+                        ) && (
+                          <div className="form-control">
+                            <label className="label">
+                              <span className="label-text">Options</span>
+                            </label>
+                            <div className="space-y-2">
+                              {field.options?.map((option, optionIndex) => (
+                                <div
+                                  key={optionIndex}
+                                  className="flex items-center space-x-2"
+                                >
+                                  <input
+                                    {...register(
+                                      `questions.${index}.options.${optionIndex}` as const
+                                    )}
+                                    placeholder={`Option ${optionIndex + 1}`}
+                                    className="input input-bordered input-primary grow"
+                                  />
+                                  <button
+                                    type="button"
+                                    className="btn btn-circle btn-ghost btn-sm"
+                                    onClick={() =>
+                                      removeOption(index, optionIndex)
+                                    }
+                                  >
+                                    <FiTrash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              ))}
+                              <button
+                                type="button"
+                                className="btn btn-outline btn-primary btn-sm"
+                                onClick={() => addOption(index)}
+                              >
+                                <FiPlusCircle className="mr-2 h-4 w-4" />
+                                Add Option
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Render scale inputs for scale questions */}
+                        {watch(`questions.${index}.type`) === "scale" && (
+                          <div className="space-y-4">
+                            <div className="form-control">
+                              <label className="label">
+                                <span className="label-text">Scale Range</span>
+                              </label>
+                              <input
+                                type="range"
+                                min={0}
+                                max={100}
+                                step={1}
+                                className="range range-primary"
+                                {...register(`questions.${index}.max`, {
+                                  valueAsNumber: true,
+                                })}
+                                onChange={(e) => {
+                                  const value = parseInt(e.target.value, 10)
+                                  setValue(`questions.${index}.max`, value)
+                                  const currentMin =
+                                    watch(`questions.${index}.min`) || 0
+                                  if (currentMin > value) {
+                                    setValue(`questions.${index}.min`, value)
+                                  }
+                                }}
+                              />
+                            </div>
+                            <div className="flex justify-between">
+                              <input
+                                type="number"
+                                {...register(`questions.${index}.min`, {
+                                  valueAsNumber: true,
+                                })}
+                                className="input input-bordered input-primary w-20"
+                                onChange={(e) => {
+                                  const value = parseInt(e.target.value, 10)
+                                  const max =
+                                    watch(`questions.${index}.max`) || 100
+                                  if (value > max) {
+                                    setValue(`questions.${index}.min`, max)
+                                  }
+                                }}
+                              />
+                              <input
+                                type="number"
+                                {...register(`questions.${index}.max`, {
+                                  valueAsNumber: true,
+                                })}
+                                className="input input-bordered input-primary w-20"
+                                onChange={(e) => {
+                                  const value = parseInt(e.target.value, 10)
+                                  const min =
+                                    watch(`questions.${index}.min`) || 0
+                                  if (value < min) {
+                                    setValue(`questions.${index}.max`, min)
+                                  }
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <div className="flex justify-between">
-                        <input
-                          type="number"
-                          {...register(`questions.${index}.min`, {
-                            valueAsNumber: true,
-                          })}
-                          className="input input-bordered input-primary w-20"
-                          onChange={(e) => {
-                            const value = parseInt(e.target.value, 10)
-                            const max = watch(`questions.${index}.max`) || 100
-                            if (value > max) {
-                              setValue(`questions.${index}.min`, max)
-                            }
-                          }}
-                        />
-                        <input
-                          type="number"
-                          {...register(`questions.${index}.max`, {
-                            valueAsNumber: true,
-                          })}
-                          className="input input-bordered input-primary w-20"
-                          onChange={(e) => {
-                            const value = parseInt(e.target.value, 10)
-                            const min = watch(`questions.${index}.min`) || 0
-                            if (value < min) {
-                              setValue(`questions.${index}.max`, min)
-                            }
-                          }}
-                        />
-                      </div>
                     </div>
-                  )}
-                </div>
-              </motion.div>
-            ))}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
 
-            <button
-              type="button"
-              onClick={() => append({ text: "", type: "text" })}
-              className="btn btn-primary btn-block"
-            >
-              <FiPlusCircle className="mr-2 h-4 w-4" />
-              Add Question
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={() => append({ text: "", type: "text" })}
+                className="btn btn-outline btn-primary btn-block"
+              >
+                <FiPlusCircle className="mr-2 h-4 w-4" />
+                Add Question
+              </button>
+            </div>
+          </motion.div>
 
-          <button
-            type="submit"
-            className="btn btn-primary btn-block"
-            disabled={isSubmitting}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
           >
-            {isSubmitting ? (
-              <>
-                <span className="loading loading-spinner"></span>
-                Creating Survey...
-              </>
-            ) : (
-              <>
-                <FiSave className="mr-2 h-4 w-4" />
-                Create Survey
-              </>
-            )}
-          </button>
+            <button
+              type="submit"
+              className="btn btn-primary btn-lg btn-block"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <span className="loading loading-spinner"></span>
+                  Creating Your Survey...
+                </>
+              ) : (
+                <>
+                  <FiSave className="mr-2 h-5 w-5" />
+                  Launch Survey
+                </>
+              )}
+            </button>
+          </motion.div>
         </form>
       </motion.div>
     </div>
