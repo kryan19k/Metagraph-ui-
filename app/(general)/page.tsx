@@ -1,140 +1,306 @@
 "use client"
 
-import React, { useState } from "react"
-import Head from "next/head"
+import React from "react"
 import Image from "next/image"
 import Link from "next/link"
-import Spline from "@splinetool/react-spline"
 import { motion } from "framer-motion"
-import { FaDiscord, FaGithub } from "react-icons/fa"
-import { LuBook } from "react-icons/lu"
+import { FaChartBar, FaCoins, FaUsers } from "react-icons/fa"
 
 import { siteConfig } from "@/config/site"
 import { cn } from "@/lib/utils"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { buttonVariants } from "@/components/ui/button"
-import {
-  PageHeader,
-  PageHeaderCTA,
-  PageHeaderDescription,
-  PageHeaderHeading,
-} from "@/components/layout/page-header"
-import { CopyButton } from "@/components/shared/copy-button"
 import { SurveyList } from "@/components/SurveyList"
 
 export default function HomePage() {
-  const [isHovered, setIsHovered] = useState(false)
-
   return (
-    <div className="container relative mt-20 min-h-screen bg-gradient-to-br from-purple-700 via-indigo-800 to-blue-900 px-0">
-      <Head>
-        <title>SurveyChain - Decentralized Surveys</title>
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
+    <div className="flex min-h-screen flex-col">
+      <BackgroundAnimation />
+      <main className="grow">
+        <HeroSection />
+        <FeaturesSection />
+        <HowItWorksSection />
+        <FeaturedSurveysSection />
+        <TestimonialsSection />
+      </main>
+    </div>
+  )
+}
 
-      <PageHeader className="pb-8">
-        <Image
-          src="/logo-gradient.png"
-          alt="TurboETH Logo"
-          width={80}
-          height={80}
-          className="h-20 w-20 rounded-2xl"
+function BackgroundAnimation() {
+  return (
+    <div className="fixed inset-0 -z-10 overflow-hidden">
+      <motion.div
+        className="absolute inset-0 bg-gradient-to-br from-purple-700/20 via-indigo-800/20 to-blue-900/20"
+        animate={{
+          backgroundPosition: ["0% 0%", "100% 100%"],
+        }}
+        transition={{
+          repeat: Infinity,
+          repeatType: "reverse",
+          duration: 20,
+        }}
+      />
+      {[...Array(50)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute h-2 w-2 rounded-full bg-white"
+          initial={{
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
+            scale: Math.random() * 0.5 + 0.5,
+            opacity: Math.random() * 0.5 + 0.25,
+          }}
+          animate={{
+            y: [null, Math.random() * window.innerHeight],
+          }}
+          transition={{
+            duration: Math.random() * 10 + 10,
+            repeat: Infinity,
+            repeatType: "reverse",
+          }}
         />
-        <PageHeaderHeading>SurveyChain</PageHeaderHeading>
-        <PageHeaderDescription>
-          Revolutionize Your Surveys with Blockchain
-        </PageHeaderDescription>
-        <PageHeaderCTA>
-          <Link
-            href={siteConfig.links.docs}
-            target="_blank"
-            rel="noreferrer noopener"
-            className={buttonVariants({ variant: "default" })}
-          >
-            <LuBook />
-            Docs
-          </Link>
-          <Link
-            href={siteConfig.links.github}
-            target="_blank"
-            rel="noreferrer noopener"
-            className={buttonVariants({ variant: "secondary" })}
-          >
-            <FaGithub />
-            Github
-          </Link>
-          <Link
-            href={siteConfig.links.discord}
-            target="_blank"
-            rel="noreferrer noopener"
-            className={cn(
-              buttonVariants(),
-              "bg-[#7289da] text-white hover:bg-[#7289da]/80"
-            )}
-          >
-            <FaDiscord />
-            Discord
-          </Link>
-        </PageHeaderCTA>
-      </PageHeader>
+      ))}
+    </div>
+  )
+}
 
-      <main className="container mx-auto px-4 py-20">
-        <div className="flex flex-col items-center justify-between lg:flex-row">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="text-white lg:w-1/2"
-          >
-            <h1 className="mb-6 text-5xl font-bold">
+function HeroSection() {
+  return (
+    <section className="relative bg-gradient-to-br from-purple-700 via-indigo-800 to-blue-900 py-20 text-white">
+      <div className="container mx-auto px-4">
+        <div className="flex flex-col items-center lg:flex-row">
+          <div className="mb-10 lg:mb-0 lg:w-1/2">
+            <motion.h1
+              className="mb-6 text-4xl font-bold lg:text-6xl"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
               Revolutionize Your Surveys with Blockchain
-            </h1>
-            <p className="mb-8 text-xl">
+            </motion.h1>
+            <motion.p
+              className="mb-8 text-xl"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
               Create, participate, and earn rewards in a decentralized survey
               ecosystem.
-            </p>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="btn btn-primary btn-lg"
-              onMouseEnter={() => setIsHovered(true)}
-              onMouseLeave={() => setIsHovered(false)}
-            >
-              Get Started
-            </motion.button>
-          </motion.div>
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.8 }}
-          className="mt-20 grid grid-cols-1 gap-8 md:grid-cols-3"
-        >
-          {["Create", "Participate", "Earn"].map((item, index) => (
+            </motion.p>
             <motion.div
-              key={item}
-              whileHover={{ scale: 1.05 }}
-              className="rounded-lg bg-white p-8 text-center text-white opacity-10"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
             >
-              <h3 className="mb-4 text-2xl font-bold">{item}</h3>
-              <p>
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam
-                viverra justo eu nulla efficitur.
-              </p>
+              <Link
+                href="/surveyCreation"
+                className={cn(buttonVariants({ size: "lg" }), "mr-4")}
+              >
+                Create Survey
+              </Link>
+              <Link
+                href="/surveyParticipation"
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "lg" })
+                )}
+              >
+                Explore Surveys
+              </Link>
+            </motion.div>
+          </div>
+          <div className="lg:w-1/2">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              <Image
+                src="/survey.png"
+                alt="Survey Illustration"
+                width={600}
+                height={400}
+                className="rounded-lg shadow-2xl"
+              />
+            </motion.div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function FeaturesSection() {
+  const features = [
+    {
+      icon: <FaChartBar className="mb-4 h-12 w-12 text-primary" />,
+      title: "Create",
+      description:
+        "Design and launch your surveys with ease. Set rewards and target your desired audience.",
+    },
+    {
+      icon: <FaUsers className="mb-4 h-12 w-12 text-primary" />,
+      title: "Participate",
+      description:
+        "Join surveys that match your profile. Provide valuable insights and earn rewards.",
+    },
+    {
+      icon: <FaCoins className="mb-4 h-12 w-12 text-primary" />,
+      title: "Earn",
+      description:
+        "Get rewarded for your contributions. Earn tokens for completing surveys and referring friends.",
+    },
+  ]
+
+  return (
+    <section className="bg-base-200 py-20">
+      <div className="container mx-auto px-4">
+        <h2 className="mb-12 text-center text-3xl font-bold">
+          Why Choose SurveyChain?
+        </h2>
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+          {features.map((feature, index) => (
+            <motion.div
+              key={feature.title}
+              className="card bg-base-100 shadow-xl"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+            >
+              <div className="card-body items-center text-center">
+                {feature.icon}
+                <h3 className="card-title">{feature.title}</h3>
+                <p>{feature.description}</p>
+              </div>
             </motion.div>
           ))}
-        </motion.div>
-      </main>
-      <div className="container mx-auto p-4">
-        <h1 className="mb-6 text-3xl font-bold text-white">
-          Available Surveys
-        </h1>
-        <SurveyList />
+        </div>
       </div>
+    </section>
+  )
+}
 
-      <footer className="py-8 text-center text-white">
-        <p>&copy; 2024 SurveyChain. All rights reserved.</p>
-      </footer>
-    </div>
+function HowItWorksSection() {
+  const steps = [
+    { title: "Register", description: "Create your account on SurveyChain" },
+    {
+      title: "Create or Join",
+      description: "Design your own surveys or participate in existing ones",
+    },
+    {
+      title: "Complete Surveys",
+      description: "Provide valuable insights and data",
+    },
+    {
+      title: "Earn Rewards",
+      description: "Get compensated for your contributions",
+    },
+  ]
+
+  return (
+    <section className="bg-base-100 py-20">
+      <div className="container mx-auto px-4">
+        <h2 className="mb-12 text-center text-3xl font-bold">How It Works</h2>
+        <ul className="steps steps-vertical w-full lg:steps-horizontal">
+          {steps.map((step, index) => (
+            <li key={step.title} className="step step-primary">
+              <div className="text-center">
+                <div className="text-lg font-semibold">{step.title}</div>
+                <div className="text-sm">{step.description}</div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )
+}
+
+function FeaturedSurveysSection() {
+  return (
+    <section className="bg-base-200 py-20">
+      <div className="container mx-auto px-4">
+        <h2 className="mb-12 text-center text-3xl font-bold">
+          Featured Surveys
+        </h2>
+        <SurveyList />
+        <div className="mt-8 text-center">
+          <Link
+            href="/surveyParticipation"
+            className={buttonVariants({ size: "lg" })}
+          >
+            View All Surveys
+          </Link>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function TestimonialsSection() {
+  const testimonials = [
+    {
+      name: "Alice Johnson",
+      role: "Market Researcher",
+      quote:
+        "SurveyChain has revolutionized how we conduct market research. The quality of responses has improved significantly.",
+      avatar: "/avatars/alice.jpg",
+    },
+    {
+      name: "Bob Smith",
+      role: "Survey Participant",
+      quote:
+        "I love participating in surveys on SurveyChain. The rewards are fair, and I feel my opinions are valued.",
+      avatar: "/avatars/bob.jpg",
+    },
+    {
+      name: "Carol Davis",
+      role: "Data Analyst",
+      quote:
+        "The data we get from SurveyChain surveys is more reliable. The blockchain aspect adds a layer of trust to the process.",
+      avatar: "/avatars/carol.jpg",
+    },
+  ]
+
+  return (
+    <section className="bg-base-100 py-20">
+      <div className="container mx-auto px-4">
+        <h2 className="mb-12 text-center text-3xl font-bold">
+          What Our Users Say
+        </h2>
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+          {testimonials.map((testimonial, index) => (
+            <motion.div
+              key={testimonial.name}
+              className="card bg-base-200 shadow-xl"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+            >
+              <div className="card-body">
+                <div className="mb-4 flex items-center">
+                  <Avatar className="mr-4">
+                    <AvatarImage
+                      src={testimonial.avatar}
+                      alt={testimonial.name}
+                    />
+                    <AvatarFallback>
+                      {testimonial.name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h3 className="font-bold">{testimonial.name}</h3>
+                    <p className="text-sm text-base-content/70">
+                      {testimonial.role}
+                    </p>
+                  </div>
+                </div>
+                <p className="italic">{testimonial.quote}</p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
   )
 }
