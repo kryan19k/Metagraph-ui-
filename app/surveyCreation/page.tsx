@@ -1,11 +1,13 @@
 "use client"
 
 import React, { useEffect, useState } from "react"
+import error from "next/error"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useConnectModal } from "@rainbow-me/rainbowkit"
 import { ethers } from "ethers"
 import { AnimatePresence, motion } from "framer-motion"
 import { useFieldArray, useForm } from "react-hook-form"
+import { FaMagic } from "react-icons/fa"
 import {
   FiDollarSign,
   FiImage,
@@ -23,6 +25,7 @@ import { WalletBalance } from "@/components/blockchain/wallet-balance"
 import { WalletEnsName } from "@/components/blockchain/wallet-ens-name"
 import { IsWalletConnected } from "@/components/shared/is-wallet-connected"
 import { IsWalletDisconnected } from "@/components/shared/is-wallet-disconnected"
+import { useOpenAIPrompt } from "@/integrations/openai/hooks/use-openai-prompt"
 
 const questionTypes = [
   { value: "text", label: "Text" },
@@ -70,6 +73,7 @@ export default function SurveyCreationPage() {
   const { openConnectModal } = useConnectModal()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [userRewards, setUserRewards] = useState("0")
+  const { response, isLoading, error, generateAIResponse } = useOpenAIPrompt()
 
   const {
     register,
@@ -202,6 +206,106 @@ export default function SurveyCreationPage() {
       variant: "default",
     })
   }
+
+  const handleAIPrompt = async () => {
+    const userPrompt = prompt("Describe the survey you want to create:")
+    if (!userPrompt) return
+
+    try {
+      await generateAIResponse(
+        `Create a survey with the following description: ${userPrompt}. Provide the survey title, description, and 3 questions with their types (text, number, radio, checkbox, or scale). Format the response as valid JSON with the following structure:
+        {
+          "survey_title": "Survey Title",
+          "description": "Survey Description",
+          "questions": [
+            {
+              "question": "Question 1",
+              "type": "text"
+            },
+            {
+              "question": "Question 2",
+              "type": "radio",
+              "options": ["Option 1", "Option 2", "Option 3"]
+            },
+            {
+              "question": "Question 3",
+              "type": "scale",
+              "min": 1,
+              "max": 5
+            }
+          ]
+        }
+        Ensure the response is valid JSON and nothing else. Do not include any explanation or additional text outside the JSON object.`
+      )
+    } catch (error) {
+      console.error("Error generating AI survey:", error)
+      toast({
+        title: "Error",
+        description: "Failed to generate AI survey. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  useEffect(() => {
+    if (response) {
+      console.log("Raw AI response:", response)
+      try {
+        // Remove any leading or trailing whitespace and extra curly braces
+        const jsonString = response
+          .trim()
+          .replace(/^{*/, "{")
+          .replace(/}*$/, "}")
+
+        const surveyData = JSON.parse(jsonString) as {
+          survey_title?: string
+          title?: string
+          description: string
+          questions: Array<{
+            question?: string
+            text?: string
+            type: string
+            options?: string[]
+            min?: number
+            max?: number
+          }>
+        }
+
+        // Adjust for the different key names in the API response
+        setValue("title", surveyData.survey_title || surveyData.title || "")
+        setValue("description", surveyData.description)
+
+        // Clear existing questions
+        setValue("questions", [])
+
+        // Add new questions
+        surveyData.questions.forEach((q, index) => {
+          append({
+            text: q.question || q.text || "",
+            type: q.type as "text" | "number" | "radio" | "checkbox" | "scale",
+            options: q.options || [],
+            min: q.min,
+            max: q.max,
+          })
+        })
+
+        toast({
+          title: "AI Survey Generated",
+          description:
+            "The survey has been populated with AI-generated content.",
+          variant: "default",
+        })
+      } catch (error) {
+        console.error("Error parsing AI response:", error)
+        console.error("Problematic response:", response)
+        toast({
+          title: "Error",
+          description: "Failed to parse AI-generated survey. Please try again.",
+          variant: "destructive",
+        })
+      }
+    }
+  }, [response, setValue, append])
 
   return (
     <div className="container mx-auto min-h-screen bg-base-200 p-4">
@@ -550,6 +654,52 @@ export default function SurveyCreationPage() {
                 <>
                   <FiSave className="mr-2 h-5 w-5" />
                   Launch Survey
+                </>
+              )}
+            </button>
+          </motion.div>
+          {error && (
+            <div className="alert alert-error shadow-lg mt-4">
+              <div>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="stroke-current shrink-0 h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <span>Error: {error}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Add the AI Survey Generation button */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <button
+              type="button"
+              onClick={handleAIPrompt}
+              className="btn btn-secondary btn-block mt-4"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <span className="loading loading-spinner"></span>
+                  Generating AI Survey...
+                </>
+              ) : (
+                <>
+                  <FaMagic className="mr-2 h-5 w-5" />
+                  Generate AI Survey
                 </>
               )}
             </button>
