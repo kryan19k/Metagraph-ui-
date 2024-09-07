@@ -93,17 +93,17 @@ function MainNavMenu() {
           <NavigationMenuTrigger>Resources</NavigationMenuTrigger>
           <NavigationMenuContent>
             <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
-              <ListItem href="/about" title="About SurveyChain">
-                Learn about our mission and technology
+              <ListItem href="/about" title="About Our Mission">
+                Learn about our mission to transform surveys with blockchain
               </ListItem>
               <ListItem href="/how-it-works" title="How It Works">
-                Understand the process of creating and taking surveys
-              </ListItem>
-              <ListItem href="/pricing" title="Pricing">
-                View our transparent and flexible pricing options
+                Understand the process of creating and participating in surveys
               </ListItem>
               <ListItem href="/faq" title="FAQ">
-                Find answers to commonly asked questions
+                Find answers to commonly asked questions about Survey Chain
+              </ListItem>
+              <ListItem href="/get-involved" title="Get Involved">
+                Discover ways to contribute to the Survey Chain ecosystem
               </ListItem>
             </ul>
           </NavigationMenuContent>
