@@ -33,6 +33,7 @@ export function RainbowKit({ children }: { children: ReactNode }) {
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider
+          coolMode
           theme={colorMode == "dark" ? darkTheme() : lightTheme()}
         >
           {children}

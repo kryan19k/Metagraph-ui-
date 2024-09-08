@@ -3,6 +3,7 @@
 import React from "react"
 import Image from "next/image"
 import Link from "next/link"
+import Spline from "@splinetool/react-spline"
 import { motion } from "framer-motion"
 import { FaChartBar, FaCoins, FaUsers } from "react-icons/fa"
 
@@ -109,19 +110,14 @@ function HeroSection() {
               </Link>
             </motion.div>
           </div>
-          <div className="lg:w-1/2">
+          <div className="lg:w-1/2 rounded-lg shadow-md">
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, delay: 0.2 }}
+              className="h-[400px] w-full rounded-md"
             >
-              <Image
-                src="/survey.png"
-                alt="Survey Illustration"
-                width={600}
-                height={400}
-                className="rounded-lg shadow-2xl"
-              />
+              <Spline scene="https://prod.spline.design/XqU0MxTxcnP0cmnt/scene.splinecode" />
             </motion.div>
           </div>
         </div>

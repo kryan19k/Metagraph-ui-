@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useState } from "react"
-import error from "next/error"
+import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useConnectModal } from "@rainbow-me/rainbowkit"
 import { ethers } from "ethers"
@@ -19,6 +19,8 @@ import { useAccount } from "wagmi"
 import { z } from "zod"
 
 import { FADE_DOWN_ANIMATION_VARIANTS } from "@/config/design"
+import { useCreateSurvey } from "@/lib/hooks/use-survey"
+import { AISurveyModal } from "@/components/ui/AISurveyModal"
 import { toast } from "@/components/ui/use-toast"
 import { WalletAddress } from "@/components/blockchain/wallet-address"
 import { WalletBalance } from "@/components/blockchain/wallet-balance"
@@ -50,30 +52,53 @@ const surveySchema = z.object({
     )
     .min(1, "At least one question is required"),
   tokenReward: z.string().min(1, "Token reward is required"),
-  imageUri: z
-    .instanceof(File)
-    .optional()
-    .refine((file) => file === undefined || file.size <= 5000000, {
-      message: "Image must be less than 5MB",
-    }),
+  imageUri: z.any().optional(),
+  rewardType: z.enum(["Native", "ERC20"]),
+  rewardToken: z.string().optional(),
+  endTime: z.string().min(1, "End time is required"), // Change this from z.date() to z.string()
+  maxResponses: z.string().min(1, "Max responses is required"), // Change this from z.number() to z.string()
+  minimumResponseTime: z.string().min(1, "Minimum response time is required"), // Change this from z.number() to z.string()
+  tags: z
+    .array(z.string())
+    .or(z.string())
+    .transform((value) =>
+      typeof value === "string"
+        ? value
+            .split(",")
+            .map((tag) => tag.trim())
+            .filter((tag) => tag !== "")
+            .slice(0, 5)
+        : value
+    ),
 })
 
 type SurveyFormData = z.infer<typeof surveySchema>
 
-// Define a schema for the expected response
-const surveyResponseSchema = z.object({
-  id: z.string(),
-  // Add other fields as necessary
-})
-
-type SurveyResponse = z.infer<typeof surveyResponseSchema>
+type AISurveyOptions = {
+  questionCount: number
+  includeScaleQuestions: boolean
+  includeMultipleChoice: boolean
+}
 
 export default function SurveyCreationPage() {
+  const router = useRouter()
   const { address } = useAccount()
   const { openConnectModal } = useConnectModal()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [userRewards, setUserRewards] = useState("0")
-  const { response, isLoading, error, generateAIResponse } = useOpenAIPrompt()
+  const {
+    response,
+    isLoading: isAILoading,
+    error: aiError,
+    generateAIResponse,
+  } = useOpenAIPrompt()
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false)
+  const {
+    handleCreateSurvey,
+    isPending: isCreatingSurvey,
+    isConfirmed,
+    hash,
+  } = useCreateSurvey()
 
   const {
     register,
@@ -81,6 +106,7 @@ export default function SurveyCreationPage() {
     handleSubmit,
     watch,
     setValue,
+    reset,
     formState: { errors },
   } = useForm<SurveyFormData>({
     resolver: zodResolver(surveySchema),
@@ -90,10 +116,27 @@ export default function SurveyCreationPage() {
       questions: [{ text: "", type: "text", options: [] }],
       tokenReward: "",
       imageUri: undefined,
+      rewardType: "Native",
+      rewardToken: "",
+      endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .slice(0, 16), // Format as YYYY-MM-DDTHH:mm
+      maxResponses: "100",
+      minimumResponseTime: "60",
+      tags: [],
     },
   })
 
-  const { fields, append, remove } = useFieldArray<SurveyFormData>({
+  type QuestionField = {
+    id: string
+    text: string
+    type: "text" | "number" | "radio" | "checkbox" | "scale"
+    options?: string[]
+    min?: number
+    max?: number
+  }
+
+  const { fields, append, remove } = useFieldArray({
     control,
     name: "questions",
   })
@@ -106,7 +149,7 @@ export default function SurveyCreationPage() {
 
   const fetchUserRewards = async (userAddress: string) => {
     try {
-      const response = await fetch(`/rewards/${userAddress}`)
+      const response = await fetch(`/api/rewards/${userAddress}`)
       if (!response.ok) throw new Error("Failed to fetch user rewards")
       const data = await response.json()
       setUserRewards(ethers.utils.formatEther(data.rewardBalance))
@@ -120,7 +163,7 @@ export default function SurveyCreationPage() {
     }
   }
 
-  const onSubmit = async (data: SurveyFormData) => {
+  const onSubmit = (data: SurveyFormData) => {
     if (!address) {
       openConnectModal?.()
       return
@@ -128,50 +171,64 @@ export default function SurveyCreationPage() {
 
     setIsSubmitting(true)
     try {
-      const surveyData = {
-        creator: address,
-        title: data.title,
-        description: data.description,
-        questions: data.questions,
-        tokenReward: data.tokenReward,
-        imageUri: data.imageUri || "",
+      // Check file size if an image is uploaded
+      if (data.imageUri instanceof File && data.imageUri.size > 5000000) {
+        toast({
+          title: "Error",
+          description: "Image must be less than 5MB",
+          variant: "destructive",
+        })
+        setIsSubmitting(false)
+        return
       }
 
-      const response = await fetch("/api/surveys", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(surveyData),
+      // Generate a unique data hash for the survey
+      const dataHash = ethers.utils.id(
+        JSON.stringify({
+          title: data.title,
+          description: data.description,
+          questions: data.questions,
+        })
+      )
+
+      // Convert reward amount to wei
+      const rewardAmount = BigInt(
+        ethers.utils.parseEther(data.tokenReward).toString()
+      )
+
+      // Convert end time to Unix timestamp
+      const endTime = BigInt(
+        Math.floor(new Date(data.endTime).getTime() / 1000)
+      )
+      const maxResponses = BigInt(data.maxResponses)
+      const minimumResponseTime = BigInt(data.minimumResponseTime)
+
+      // Prepare image URI (you might want to upload this to IPFS in a real-world scenario)
+      const imageUri =
+        data.imageUri instanceof File ? URL.createObjectURL(data.imageUri) : ""
+
+      // Call the smart contract function
+      handleCreateSurvey(
+        dataHash as `0x${string}`,
+        rewardAmount,
+        data.rewardType === "Native" ? 0 : 1,
+        (data.rewardToken as `0x${string}`) ||
+          "0x0000000000000000000000000000000000000000",
+        endTime,
+        imageUri,
+        maxResponses,
+        minimumResponseTime,
+        data.tags
+      )
+
+      toast({
+        title: "Survey created successfully!",
+        description: `Transaction hash: ${hash ?? "Not available"}`,
+        variant: "default",
       })
 
-      if (!response.ok) {
-        throw new Error("Failed to create survey")
-      }
-
-      const result = await response.json()
-
-      // Validate the response
-      const parsedResult = surveyResponseSchema.safeParse(result)
-
-      if (parsedResult.success) {
-        const surveyResponse: SurveyResponse = parsedResult.data
-        toast({
-          title: "Survey created successfully!",
-          description: `Survey ID: ${surveyResponse.id}`,
-          variant: "default",
-        })
-      } else {
-        console.error("Invalid response format:", parsedResult.error)
-        toast({
-          title: "Survey created, but couldn't retrieve ID",
-          description: "Please check the surveys list for your new survey.",
-          variant: "default", // Changed from "warning" to "default"
-        })
-      }
-
-      // Optionally, redirect to the survey details page
-      // router.push(`/surveys/${surveyResponse.id}`)
+      // Optionally, redirect to the survey details page or surveys list
+      router.push("/surveys")
     } catch (error) {
       toast({
         title: "Error creating survey",
@@ -207,13 +264,26 @@ export default function SurveyCreationPage() {
     })
   }
 
-  const handleAIPrompt = async () => {
-    const userPrompt = prompt("Describe the survey you want to create:")
-    if (!userPrompt) return
+  const handleAIPrompt = async (prompt: string, options: AISurveyOptions) => {
+    if (!prompt) return
 
     try {
       await generateAIResponse(
-        `Create a survey with the following description: ${userPrompt}. Provide the survey title, description, and 3 questions with their types (text, number, radio, checkbox, or scale). Format the response as valid JSON with the following structure:
+        `Create a survey with the following description: ${prompt}. 
+        Provide the survey title, description, and ${
+          options.questionCount
+        } questions.
+        ${
+          options.includeScaleQuestions
+            ? "Include at least one scale question."
+            : ""
+        }
+        ${
+          options.includeMultipleChoice
+            ? "Include at least one multiple choice question."
+            : ""
+        }
+        Format the response as valid JSON with the following structure:
         {
           "survey_title": "Survey Title",
           "description": "Survey Description",
@@ -271,22 +341,27 @@ export default function SurveyCreationPage() {
           }>
         }
 
-        // Adjust for the different key names in the API response
-        setValue("title", surveyData.survey_title || surveyData.title || "")
-        setValue("description", surveyData.description)
-
-        // Clear existing questions
-        setValue("questions", [])
-
-        // Add new questions
-        surveyData.questions.forEach((q, index) => {
-          append({
+        // Use reset instead of setValue to update the entire form
+        reset({
+          title: surveyData.survey_title || surveyData.title || "",
+          description: surveyData.description,
+          questions: surveyData.questions.map((q) => ({
             text: q.question || q.text || "",
             type: q.type as "text" | "number" | "radio" | "checkbox" | "scale",
             options: q.options || [],
-            min: q.min,
-            max: q.max,
-          })
+            min: q.min !== undefined ? Number(q.min) : undefined,
+            max: q.max !== undefined ? Number(q.max) : undefined,
+          })),
+          tokenReward: "",
+          imageUri: undefined,
+          rewardType: "Native",
+          rewardToken: "",
+          endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+            .toISOString()
+            .slice(0, 16),
+          maxResponses: "100",
+          minimumResponseTime: "60",
+          tags: [],
         })
 
         toast({
@@ -305,7 +380,7 @@ export default function SurveyCreationPage() {
         })
       }
     }
-  }, [response, setValue, append])
+  }, [response, reset])
 
   return (
     <div className="container mx-auto min-h-screen bg-base-200 p-4">
@@ -371,6 +446,27 @@ export default function SurveyCreationPage() {
             transition={{ delay: 0.2 }}
           >
             <div className="card-body">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setIsAIModalOpen(true)}
+                  className="btn btn-secondary btn-block mt-4"
+                  disabled={isAILoading}
+                >
+                  <FaMagic className="mr-2 h-5 w-5" />
+                  Generate AI Survey
+                </button>
+              </motion.div>
+              <AISurveyModal
+                isOpen={isAIModalOpen}
+                onClose={() => setIsAIModalOpen(false)}
+                onGenerate={handleAIPrompt}
+              />
+
               <h2 className="card-title mb-4">Survey Details</h2>
 
               <div className="form-control">
@@ -409,8 +505,37 @@ export default function SurveyCreationPage() {
               </div>
 
               <div className="form-control">
+                <label className="label" htmlFor="rewardType">
+                  <span className="label-text">Reward Type</span>
+                </label>
+                <select
+                  id="rewardType"
+                  {...register("rewardType")}
+                  className="select select-bordered w-full"
+                >
+                  <option value="Native">Native Token</option>
+                  <option value="ERC20">ERC20 Token</option>
+                </select>
+              </div>
+
+              {watch("rewardType") === "ERC20" && (
+                <div className="form-control">
+                  <label className="label" htmlFor="rewardToken">
+                    <span className="label-text">ERC20 Token Address</span>
+                  </label>
+                  <input
+                    id="rewardToken"
+                    type="text"
+                    {...register("rewardToken")}
+                    placeholder="Enter ERC20 token address"
+                    className="input input-bordered w-full"
+                  />
+                </div>
+              )}
+
+              <div className="form-control">
                 <label className="label" htmlFor="tokenReward">
-                  <span className="label-text">Token Reward (DAG)</span>
+                  <span className="label-text">Token Reward Amount</span>
                 </label>
                 <div className="relative flex items-center">
                   <input
@@ -432,8 +557,82 @@ export default function SurveyCreationPage() {
               </div>
 
               <div className="form-control">
+                <label className="label" htmlFor="endTime">
+                  <span className="label-text">Survey End Time</span>
+                </label>
+                <input
+                  id="endTime"
+                  type="datetime-local"
+                  {...register("endTime")}
+                  className="input input-bordered w-full"
+                />
+
+                {errors.endTime && (
+                  <span className="mt-1 text-error">
+                    {errors.endTime.message}
+                  </span>
+                )}
+              </div>
+
+              <div className="form-control">
+                <label className="label" htmlFor="maxResponses">
+                  <span className="label-text">Maximum Responses</span>
+                </label>
+                <input
+                  id="maxResponses"
+                  type="number"
+                  {...register("maxResponses")}
+                  className="input input-bordered w-full"
+                />
+                {errors.maxResponses && (
+                  <span className="mt-1 text-error">
+                    {errors.maxResponses.message}
+                  </span>
+                )}
+              </div>
+
+              <div className="form-control">
+                <label className="label" htmlFor="minimumResponseTime">
+                  <span className="label-text">
+                    Minimum Response Time (seconds)
+                  </span>
+                </label>
+                <input
+                  id="minimumResponseTime"
+                  type="number"
+                  {...register("minimumResponseTime")}
+                  className="input input-bordered w-full"
+                />
+                {errors.minimumResponseTime && (
+                  <span className="mt-1 text-error">
+                    {errors.minimumResponseTime.message}
+                  </span>
+                )}
+              </div>
+
+              <div className="form-control">
+                <label className="label" htmlFor="tags">
+                  <span className="label-text">
+                    Tags (comma-separated, max 5)
+                  </span>
+                </label>
+                <input
+                  id="tags"
+                  type="text"
+                  {...register("tags")}
+                  placeholder="Enter tags separated by commas"
+                  className="input input-bordered w-full"
+                />
+                {errors.tags && (
+                  <span className="mt-1 text-error">{errors.tags.message}</span>
+                )}
+              </div>
+
+              <div className="form-control">
                 <label className="label" htmlFor="imageUri">
-                  <span className="label-text">Survey Image (optional)</span>
+                  <span className="label-text">
+                    Survey Image (optional, max 5MB)
+                  </span>
                 </label>
                 <input
                   type="file"
@@ -441,12 +640,18 @@ export default function SurveyCreationPage() {
                   {...register("imageUri")}
                   className="file-input file-input-bordered file-input-primary w-full"
                   accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file && file.size > 5000000) {
+                      toast({
+                        title: "Error",
+                        description: "Image must be less than 5MB",
+                        variant: "destructive",
+                      })
+                      e.target.value = "" // Clear the input
+                    }
+                  }}
                 />
-                {errors.imageUri && (
-                  <span className="mt-1 text-error">
-                    {errors.imageUri.message}
-                  </span>
-                )}
               </div>
             </div>
           </motion.div>
@@ -564,57 +769,24 @@ export default function SurveyCreationPage() {
                               <label className="label">
                                 <span className="label-text">Scale Range</span>
                               </label>
-                              <input
-                                type="range"
-                                min={0}
-                                max={100}
-                                step={1}
-                                className="range range-primary"
-                                {...register(`questions.${index}.max`, {
-                                  valueAsNumber: true,
-                                })}
-                                onChange={(e) => {
-                                  const value = parseInt(e.target.value, 10)
-                                  setValue(`questions.${index}.max`, value)
-                                  const currentMin =
-                                    watch(`questions.${index}.min`) || 0
-                                  if (currentMin > value) {
-                                    setValue(`questions.${index}.min`, value)
-                                  }
-                                }}
-                              />
-                            </div>
-                            <div className="flex justify-between">
-                              <input
-                                type="number"
-                                {...register(`questions.${index}.min`, {
-                                  valueAsNumber: true,
-                                })}
-                                className="input input-bordered input-primary w-20"
-                                onChange={(e) => {
-                                  const value = parseInt(e.target.value, 10)
-                                  const max =
-                                    watch(`questions.${index}.max`) || 100
-                                  if (value > max) {
-                                    setValue(`questions.${index}.min`, max)
-                                  }
-                                }}
-                              />
-                              <input
-                                type="number"
-                                {...register(`questions.${index}.max`, {
-                                  valueAsNumber: true,
-                                })}
-                                className="input input-bordered input-primary w-20"
-                                onChange={(e) => {
-                                  const value = parseInt(e.target.value, 10)
-                                  const min =
-                                    watch(`questions.${index}.min`) || 0
-                                  if (value < min) {
-                                    setValue(`questions.${index}.max`, min)
-                                  }
-                                }}
-                              />
+                              <div className="flex space-x-4">
+                                <input
+                                  type="number"
+                                  {...register(`questions.${index}.min`, {
+                                    valueAsNumber: true,
+                                  })}
+                                  placeholder="Min"
+                                  className="input input-bordered input-primary w-20"
+                                />
+                                <input
+                                  type="number"
+                                  {...register(`questions.${index}.max`, {
+                                    valueAsNumber: true,
+                                  })}
+                                  placeholder="Max"
+                                  className="input input-bordered input-primary w-20"
+                                />
+                              </div>
                             </div>
                           </div>
                         )}
@@ -643,9 +815,9 @@ export default function SurveyCreationPage() {
             <button
               type="submit"
               className="btn btn-primary btn-lg btn-block"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isCreatingSurvey}
             >
-              {isSubmitting ? (
+              {isSubmitting || isCreatingSurvey ? (
                 <>
                   <span className="loading loading-spinner"></span>
                   Creating Your Survey...
@@ -654,52 +826,6 @@ export default function SurveyCreationPage() {
                 <>
                   <FiSave className="mr-2 h-5 w-5" />
                   Launch Survey
-                </>
-              )}
-            </button>
-          </motion.div>
-          {error && (
-            <div className="alert alert-error shadow-lg mt-4">
-              <div>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="stroke-current shrink-0 h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <span>Error: {error}</span>
-              </div>
-            </div>
-          )}
-
-          {/* Add the AI Survey Generation button */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <button
-              type="button"
-              onClick={handleAIPrompt}
-              className="btn btn-secondary btn-block mt-4"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <span className="loading loading-spinner"></span>
-                  Generating AI Survey...
-                </>
-              ) : (
-                <>
-                  <FaMagic className="mr-2 h-5 w-5" />
-                  Generate AI Survey
                 </>
               )}
             </button>

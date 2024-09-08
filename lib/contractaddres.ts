@@ -1,0 +1,1 @@
+export const surveyContractAddress = "0x29Ab26E69D5aD0D324FA1527DB2354b8f05b4cfa"
