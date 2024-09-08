@@ -98,6 +98,7 @@ export default function SurveyCreationPage() {
     isPending: isCreatingSurvey,
     isConfirmed,
     hash,
+    error: createSurveyError,
   } = useCreateSurvey()
 
   const {
@@ -163,7 +164,7 @@ export default function SurveyCreationPage() {
     }
   }
 
-  const onSubmit = (data: SurveyFormData) => {
+  const onSubmit = async (data: SurveyFormData) => {
     if (!address) {
       openConnectModal?.()
       return
@@ -189,7 +190,7 @@ export default function SurveyCreationPage() {
           description: data.description,
           questions: data.questions,
         })
-      )
+      ) as `0x${string}`
 
       // Convert reward amount to wei
       const rewardAmount = BigInt(
@@ -208,8 +209,8 @@ export default function SurveyCreationPage() {
         data.imageUri instanceof File ? URL.createObjectURL(data.imageUri) : ""
 
       // Call the smart contract function
-      handleCreateSurvey(
-        dataHash as `0x${string}`,
+      const result = await handleCreateSurvey(
+        dataHash,
         rewardAmount,
         data.rewardType === "Native" ? 0 : 1,
         (data.rewardToken as `0x${string}`) ||
@@ -221,15 +222,15 @@ export default function SurveyCreationPage() {
         data.tags
       )
 
+      console.log("Survey creation result:", result)
+
       toast({
-        title: "Survey created successfully!",
-        description: `Transaction hash: ${hash ?? "Not available"}`,
+        title: "Survey creation initiated",
+        description: "Please wait for the transaction to be confirmed.",
         variant: "default",
       })
-
-      // Optionally, redirect to the survey details page or surveys list
-      router.push("/surveys")
     } catch (error) {
+      console.error("Error creating survey:", error)
       toast({
         title: "Error creating survey",
         description: error instanceof Error ? error.message : String(error),
@@ -239,6 +240,37 @@ export default function SurveyCreationPage() {
       setIsSubmitting(false)
     }
   }
+  useEffect(() => {
+    if (isCreatingSurvey) {
+      toast({
+        title: "Creating survey",
+        description: "Your survey is being created. Please wait...",
+        variant: "default",
+      })
+    }
+  }, [isCreatingSurvey])
+
+  useEffect(() => {
+    if (isConfirmed) {
+      toast({
+        title: "Survey created successfully!",
+        description: `Transaction hash: ${hash ?? "Not available"}`,
+        variant: "default",
+      })
+      // Optionally, redirect to the survey details page or surveys list
+      router.push("/surveys")
+    }
+  }, [isConfirmed, hash, router])
+
+  useEffect(() => {
+    if (createSurveyError) {
+      toast({
+        title: "Error creating survey",
+        description: createSurveyError.message || "An unknown error occurred",
+        variant: "destructive",
+      })
+    }
+  }, [createSurveyError])
 
   const addOption = (index: number) => {
     const currentOptions = watch(`questions.${index}.options`) || []

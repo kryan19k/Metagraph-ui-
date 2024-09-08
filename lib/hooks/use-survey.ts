@@ -1,4 +1,5 @@
 import { BaseError } from "viem"
+import { baseSepolia } from "viem/chains"
 import {
   useAccount,
   useReadContract,
@@ -38,9 +39,9 @@ interface SurveyStatistics {
 
 // Write functions
 export function useCreateSurvey() {
-  const { data: hash, error, isPending, writeContract } = useWriteContract()
+  const { writeContract, data: hash, error, isPending } = useWriteContract()
 
-  const handleCreateSurvey = (
+  const handleCreateSurvey = async (
     dataHash: `0x${string}`,
     rewardAmount: bigint,
     rewardType: number,
@@ -51,22 +52,29 @@ export function useCreateSurvey() {
     minimumResponseTime: bigint,
     tags: string[]
   ) => {
-    writeContract({
-      address: SURVEY_CONTRACT_ADDRESS,
-      abi: surveyAbi,
-      functionName: "createSurvey",
-      args: [
-        dataHash,
-        rewardAmount,
-        rewardType,
-        rewardToken,
-        endTime,
-        imageUri,
-        maxResponses,
-        minimumResponseTime,
-        tags,
-      ],
-    })
+    try {
+      const result = await writeContract({
+        address: SURVEY_CONTRACT_ADDRESS,
+        abi: surveyAbi,
+        functionName: 'createSurvey',
+        args: [
+          dataHash,
+          rewardAmount,
+          rewardType,
+          rewardToken,
+          endTime,
+          imageUri,
+          maxResponses,
+          minimumResponseTime,
+          tags,
+        ],
+        chainId: baseSepolia.id, // Specify the chain ID explicitly
+      })
+      return result
+    } catch (error) {
+      console.error("Error in handleCreateSurvey:", error)
+      throw error
+    }
   }
 
   const { isLoading: isConfirming, isSuccess: isConfirmed } =
@@ -81,7 +89,6 @@ export function useCreateSurvey() {
     isConfirmed,
   }
 }
-
 export function useSubmitResponse() {
   const { data: hash, error, isPending, writeContract } = useWriteContract()
 

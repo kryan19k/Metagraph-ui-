@@ -39,6 +39,7 @@ export const chains = [
 export const transports = {
   [mainnet.id]: http(),
   [sepolia.id]: http(),
+  [baseSepolia.id]: http(),
   [polygonMumbai.id]: http(),
   [gnosisChiado.id]: http(),
   [hardhat.id]: http(),
@@ -48,3 +49,5 @@ export const transports = {
   [gnosis.id]: http(),
   [base.id]: http(),
 } as const
+
+

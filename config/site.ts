@@ -15,7 +15,7 @@ interface SiteConfig {
   }
 }
 
-export const SITE_CANONICAL = "https://turboeth.xyz"
+export const SITE_CANONICAL = "https://surveychain.xyz"
 
 export const siteConfig: SiteConfig = {
   name: "SurveyChain",

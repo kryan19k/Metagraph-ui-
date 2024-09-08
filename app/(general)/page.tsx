@@ -110,12 +110,12 @@ function HeroSection() {
               </Link>
             </motion.div>
           </div>
-          <div className="lg:w-1/2 rounded-lg shadow-md">
+          <div className="lg:w-1/2">
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="h-[400px] w-full rounded-md"
+              className="artboard artboard-horizontal phone-1 overflow-hidden rounded-lg shadow-md"
             >
               <Spline scene="https://prod.spline.design/XqU0MxTxcnP0cmnt/scene.splinecode" />
             </motion.div>
