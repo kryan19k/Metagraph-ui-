@@ -14,6 +14,14 @@ export interface Survey {
   }>;
   creator: string;
   tokenReward: string;
+  endTime: string;
+  maxResponses: string;
+  minimumResponseTime: string;
+  tags: string[];
+  responses: Array<{
+    respondent: string;
+    encryptedAnswers: string;
+  }>;
 }
 
 class MockDataStore {
@@ -57,82 +65,17 @@ class MockDataStore {
         }
       ],
       creator: "0x1234567890123456789012345678901234567890",
-      tokenReward: "2000000000000000000" // 2 tokens in wei
+      tokenReward: "2000000000000000000", // 2 tokens in wei
+      endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      maxResponses: "100",
+      minimumResponseTime: "60",
+      tags: ["UX", "Feedback", "DApp"],
+      responses: []
     });
 
-    const survey2 = this.createSurvey({
-      title: "Comparison of Decentralized Survey Platforms",
-      description: "Share your experiences with different decentralized survey platforms.",
-      questions: [
-        {
-          id: uuidv4(),
-          text: "Which of the following decentralized survey platforms have you used?",
-          type: "checkbox",
-          options: ["SurveyChain", "DecentralSurvey", "BlockSurvey", "CryptoOpinion", "None of the above"]
-        },
-        {
-          id: uuidv4(),
-          text: "How would you rate the user interface of SurveyChain compared to other platforms?",
-          type: "radio",
-          options: ["Much worse", "Slightly worse", "About the same", "Slightly better", "Much better"]
-        },
-        {
-          id: uuidv4(),
-          text: "What unique feature of SurveyChain sets it apart from other platforms?",
-          type: "text"
-        },
-        {
-          id: uuidv4(),
-          text: "On a scale of 1-10, how satisfied are you with the token reward system in SurveyChain?",
-          type: "scale",
-          min: 1,
-          max: 10
-        }
-      ],
-      creator: "0x1234567890123456789012345678901234567890",
-      tokenReward: "2500000000000000000" // 2.5 tokens in wei
-    });
+    // ... (other sample surveys)
 
-    const survey3 = this.createSurvey({
-      title: "Blockchain Technology Adoption Survey",
-      description: "Help us understand the adoption and perception of blockchain technology.",
-      questions: [
-        {
-          id: uuidv4(),
-          text: "How familiar are you with blockchain technology?",
-          type: "radio",
-          options: ["Not at all familiar", "Slightly familiar", "Moderately familiar", "Very familiar", "Extremely familiar"]
-        },
-        {
-          id: uuidv4(),
-          text: "Which blockchain platforms have you used? (Select all that apply)",
-          type: "checkbox",
-          options: ["Ethereum", "Binance Smart Chain", "Polkadot", "Cardano", "Solana", "Other"]
-        },
-        {
-          id: uuidv4(),
-          text: "What do you think is the biggest advantage of blockchain technology?",
-          type: "radio",
-          options: ["Decentralization", "Transparency", "Security", "Immutability", "Smart Contracts"]
-        },
-        {
-          id: uuidv4(),
-          text: "In your opinion, what is the biggest challenge for widespread blockchain adoption?",
-          type: "text"
-        },
-        {
-          id: uuidv4(),
-          text: "How likely are you to invest in blockchain projects in the next 12 months?",
-          type: "scale",
-          min: 1,
-          max: 5
-        }
-      ],
-      creator: "0x1234567890123456789012345678901234567890",
-      tokenReward: "3000000000000000000" // 3 tokens in wei
-    });
-
-    console.log("Sample surveys created:", survey1, survey2, survey3);
+    console.log("Sample surveys created:", survey1 /*, survey2, survey3 */);
     console.log("MockDataStore initialized with surveys:", this.surveys);
   }
 
@@ -147,10 +90,31 @@ class MockDataStore {
     const newSurvey: Survey = {
       ...surveyData,
       id: uuidv4(),
+      responses: surveyData.responses || []
     };
     this.surveys.push(newSurvey);
     console.log('New survey created:', newSurvey);
     return newSurvey;
+  }
+
+  private saveState() {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mockDataStore', JSON.stringify({
+        surveys: this.surveys,
+        userRewards: this.userRewards,
+      }));
+    }
+  }
+
+  private loadState() {
+    if (typeof window !== 'undefined') {
+      const savedState = localStorage.getItem('mockDataStore');
+      if (savedState) {
+        const parsedState = JSON.parse(savedState);
+        this.surveys = parsedState.surveys;
+        this.userRewards = parsedState.userRewards;
+      }
+    }
   }
 
   getAllSurveys(): Survey[] {
@@ -168,5 +132,6 @@ class MockDataStore {
     this.userRewards[address] = newRewards.toString();
   }
 }
+
 
 export const mockDataStore = new MockDataStore();

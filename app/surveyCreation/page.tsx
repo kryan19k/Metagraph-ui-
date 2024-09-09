@@ -19,7 +19,7 @@ import { useAccount } from "wagmi"
 import { z } from "zod"
 
 import { FADE_DOWN_ANIMATION_VARIANTS } from "@/config/design"
-import { useCreateSurvey } from "@/lib/hooks/use-survey"
+import { useCreateSurvey } from "@/lib/hooks/useCreateSurvey"
 import { AISurveyModal } from "@/components/ui/AISurveyModal"
 import { toast } from "@/components/ui/use-toast"
 import { WalletAddress } from "@/components/blockchain/wallet-address"
@@ -53,11 +53,9 @@ const surveySchema = z.object({
     .min(1, "At least one question is required"),
   tokenReward: z.string().min(1, "Token reward is required"),
   imageUri: z.any().optional(),
-  rewardType: z.enum(["Native", "ERC20"]),
-  rewardToken: z.string().optional(),
-  endTime: z.string().min(1, "End time is required"), // Change this from z.date() to z.string()
-  maxResponses: z.string().min(1, "Max responses is required"), // Change this from z.number() to z.string()
-  minimumResponseTime: z.string().min(1, "Minimum response time is required"), // Change this from z.number() to z.string()
+  endTime: z.string().min(1, "End time is required"),
+  maxResponses: z.string().min(1, "Max responses is required"),
+  minimumResponseTime: z.string().min(1, "Minimum response time is required"),
   tags: z
     .array(z.string())
     .or(z.string())
@@ -80,26 +78,23 @@ type AISurveyOptions = {
   includeMultipleChoice: boolean
 }
 
+// Add this type definition
+type SurveyCreationResult = {
+  surveyId: string | number
+  privateKey: string
+}
+
 export default function SurveyCreationPage() {
   const router = useRouter()
-  const { address } = useAccount()
-  const { openConnectModal } = useConnectModal()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [userRewards, setUserRewards] = useState("0")
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false)
+  const { handleCreateSurvey, error: createSurveyError } = useCreateSurvey()
+  const [isCreatingSurvey, setIsCreatingSurvey] = useState(false)
   const {
-    response,
+    response: aiResponse,
     isLoading: isAILoading,
-    error: aiError,
     generateAIResponse,
   } = useOpenAIPrompt()
-  const [isAIModalOpen, setIsAIModalOpen] = useState(false)
-  const {
-    handleCreateSurvey,
-    isPending: isCreatingSurvey,
-    isConfirmed,
-    hash,
-    error: createSurveyError,
-  } = useCreateSurvey()
 
   const {
     register,
@@ -117,60 +112,23 @@ export default function SurveyCreationPage() {
       questions: [{ text: "", type: "text", options: [] }],
       tokenReward: "",
       imageUri: undefined,
-      rewardType: "Native",
-      rewardToken: "",
       endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
         .toISOString()
-        .slice(0, 16), // Format as YYYY-MM-DDTHH:mm
+        .slice(0, 16),
       maxResponses: "100",
       minimumResponseTime: "60",
       tags: [],
     },
   })
 
-  type QuestionField = {
-    id: string
-    text: string
-    type: "text" | "number" | "radio" | "checkbox" | "scale"
-    options?: string[]
-    min?: number
-    max?: number
-  }
-
   const { fields, append, remove } = useFieldArray({
     control,
     name: "questions",
   })
 
-  useEffect(() => {
-    if (address) {
-      void fetchUserRewards(address)
-    }
-  }, [address])
-
-  const fetchUserRewards = async (userAddress: string) => {
-    try {
-      const response = await fetch(`/api/rewards/${userAddress}`)
-      if (!response.ok) throw new Error("Failed to fetch user rewards")
-      const data = await response.json()
-      setUserRewards(ethers.utils.formatEther(data.rewardBalance))
-    } catch (error) {
-      console.error("Error fetching user rewards:", error)
-      toast({
-        title: "Error fetching rewards",
-        description: "Failed to fetch your current reward balance.",
-        variant: "destructive",
-      })
-    }
-  }
-
   const onSubmit = async (data: SurveyFormData) => {
-    if (!address) {
-      openConnectModal?.()
-      return
-    }
-
     setIsSubmitting(true)
+    setIsCreatingSurvey(true)
     try {
       // Check file size if an image is uploaded
       if (data.imageUri instanceof File && data.imageUri.size > 5000000) {
@@ -183,52 +141,35 @@ export default function SurveyCreationPage() {
         return
       }
 
-      // Generate a unique data hash for the survey
-      const dataHash = ethers.utils.id(
-        JSON.stringify({
-          title: data.title,
-          description: data.description,
-          questions: data.questions,
-        })
-      ) as `0x${string}`
-
-      // Convert reward amount to wei
-      const rewardAmount = BigInt(
-        ethers.utils.parseEther(data.tokenReward).toString()
-      )
-
-      // Convert end time to Unix timestamp
-      const endTime = BigInt(
-        Math.floor(new Date(data.endTime).getTime() / 1000)
-      )
-      const maxResponses = BigInt(data.maxResponses)
-      const minimumResponseTime = BigInt(data.minimumResponseTime)
-
       // Prepare image URI (you might want to upload this to IPFS in a real-world scenario)
       const imageUri =
         data.imageUri instanceof File ? URL.createObjectURL(data.imageUri) : ""
 
-      // Call the smart contract function
-      const result = await handleCreateSurvey(
-        dataHash,
-        rewardAmount,
-        data.rewardType === "Native" ? 0 : 1,
-        (data.rewardToken as `0x${string}`) ||
-          "0x0000000000000000000000000000000000000000",
-        endTime,
+      // Call the mock API function
+      const result: SurveyCreationResult = await handleCreateSurvey({
+        creator: "mock-address", // In a real app, this would be the user's address
+        questions: data.questions,
+        tokenReward: data.tokenReward,
         imageUri,
-        maxResponses,
-        minimumResponseTime,
-        data.tags
-      )
+        endTime: data.endTime,
+        maxResponses: data.maxResponses,
+        minimumResponseTime: data.minimumResponseTime,
+        tags: Array.isArray(data.tags) ? data.tags : [data.tags],
+      })
 
       console.log("Survey creation result:", result)
 
       toast({
-        title: "Survey creation initiated",
-        description: "Please wait for the transaction to be confirmed.",
+        title: "Survey created successfully",
+        description: `Survey ID: ${result.surveyId.toString()}`,
         variant: "default",
       })
+
+      // Store the private key in local storage
+      localStorage.setItem(`survey_key_${result.surveyId}`, result.privateKey)
+
+      // Redirect to the survey details page
+      router.push(`/surveys/${result.surveyId}`)
     } catch (error) {
       console.error("Error creating survey:", error)
       toast({
@@ -238,29 +179,9 @@ export default function SurveyCreationPage() {
       })
     } finally {
       setIsSubmitting(false)
+      setIsCreatingSurvey(false)
     }
   }
-  useEffect(() => {
-    if (isCreatingSurvey) {
-      toast({
-        title: "Creating survey",
-        description: "Your survey is being created. Please wait...",
-        variant: "default",
-      })
-    }
-  }, [isCreatingSurvey])
-
-  useEffect(() => {
-    if (isConfirmed) {
-      toast({
-        title: "Survey created successfully!",
-        description: `Transaction hash: ${hash ?? "Not available"}`,
-        variant: "default",
-      })
-      // Optionally, redirect to the survey details page or surveys list
-      router.push("/surveys")
-    }
-  }, [isConfirmed, hash, router])
 
   useEffect(() => {
     if (createSurveyError) {
@@ -350,11 +271,11 @@ export default function SurveyCreationPage() {
   }
 
   useEffect(() => {
-    if (response) {
-      console.log("Raw AI response:", response)
+    if (aiResponse) {
+      console.log("Raw AI response:", aiResponse)
       try {
         // Remove any leading or trailing whitespace and extra curly braces
-        const jsonString = response
+        const jsonString = aiResponse
           .trim()
           .replace(/^{*/, "{")
           .replace(/}*$/, "}")
@@ -386,8 +307,6 @@ export default function SurveyCreationPage() {
           })),
           tokenReward: "",
           imageUri: undefined,
-          rewardType: "Native",
-          rewardToken: "",
           endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
             .toISOString()
             .slice(0, 16),
@@ -404,7 +323,7 @@ export default function SurveyCreationPage() {
         })
       } catch (error) {
         console.error("Error parsing AI response:", error)
-        console.error("Problematic response:", response)
+        console.error("Problematic response:", aiResponse)
         toast({
           title: "Error",
           description: "Failed to parse AI-generated survey. Please try again.",
@@ -412,7 +331,7 @@ export default function SurveyCreationPage() {
         })
       }
     }
-  }, [response, reset])
+  }, [aiResponse, reset])
 
   return (
     <div className="container mx-auto min-h-screen bg-base-200 p-4">
@@ -442,7 +361,7 @@ export default function SurveyCreationPage() {
                 <WalletBalance />
                 <WalletEnsName />
                 <div className="badge badge-primary badge-lg">
-                  Reward Balance: {userRewards} DAG
+                  Reward Balance: 5 DAG
                 </div>
               </div>
             </div>
@@ -535,35 +454,6 @@ export default function SurveyCreationPage() {
                   </span>
                 )}
               </div>
-
-              <div className="form-control">
-                <label className="label" htmlFor="rewardType">
-                  <span className="label-text">Reward Type</span>
-                </label>
-                <select
-                  id="rewardType"
-                  {...register("rewardType")}
-                  className="select select-bordered w-full"
-                >
-                  <option value="Native">Native Token</option>
-                  <option value="ERC20">ERC20 Token</option>
-                </select>
-              </div>
-
-              {watch("rewardType") === "ERC20" && (
-                <div className="form-control">
-                  <label className="label" htmlFor="rewardToken">
-                    <span className="label-text">ERC20 Token Address</span>
-                  </label>
-                  <input
-                    id="rewardToken"
-                    type="text"
-                    {...register("rewardToken")}
-                    placeholder="Enter ERC20 token address"
-                    className="input input-bordered w-full"
-                  />
-                </div>
-              )}
 
               <div className="form-control">
                 <label className="label" htmlFor="tokenReward">

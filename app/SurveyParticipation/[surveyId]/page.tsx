@@ -9,6 +9,7 @@ import { Controller, useForm } from "react-hook-form"
 import { useAccount } from "wagmi"
 import * as z from "zod"
 
+import { encryptAnswers } from "@/lib/utils/encryption"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -133,6 +134,16 @@ export default function SurveyParticipationPage() {
       })
       return
     }
+    const encryptedAnswers = encryptAnswers(data.answers, "some-public-key")
+
+    const response = await fetch(`/api/surveys/${String(surveyId)}/responses`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        respondent: address,
+        encryptedAnswers,
+      }),
+    })
 
     setIsSubmitting(true)
     try {

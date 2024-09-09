@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/await-thenable */
 import { BaseError } from "viem"
 import { baseSepolia } from "viem/chains"
 import {
