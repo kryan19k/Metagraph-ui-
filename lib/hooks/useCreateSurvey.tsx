@@ -1,16 +1,19 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 import { useState } from "react"
 
 interface SurveyCreationParams {
   creator: string
+  title: string
+  description: string
   questions: Array<{
     text: string
-    type: string
+    type: "text" | "number" | "radio" | "checkbox" | "scale"
     options?: string[]
     min?: number
     max?: number
   }>
   tokenReward: string
-  imageUri: string
+  imageUri?: string
   endTime: string
   maxResponses: string
   minimumResponseTime: string
@@ -43,11 +46,15 @@ export function useCreateSurvey() {
         body: JSON.stringify(params),
       })
 
+      const data = await response.json()
+
       if (!response.ok) {
-        throw new Error("Failed to create survey")
+        console.error("Survey creation error:", data)
+        throw new Error(
+          data.details || data.error || "An unknown error occurred"
+        )
       }
 
-      const data: SurveyCreationResult = await response.json()
       setSurveyId(data.surveyId)
       setPrivateKey(data.privateKey)
 

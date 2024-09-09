@@ -1,31 +1,32 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 //surveyid/route.ts
-
 import { NextRequest, NextResponse } from 'next/server';
-import { mockDataStore } from '@/app/mockDataStore';
+import { PrismaClient } from '@prisma/client';
 
-export function GET(
-  _request: NextRequest,
+const prisma = new PrismaClient();
+
+export async function GET(
+  req: NextRequest,
   { params }: { params: { surveyid: string } }
 ) {
-  console.log('GET /api/surveys/[surveyid] hit', params);
-  
   const { surveyid } = params;
 
   if (!surveyid) {
-    console.error('Invalid surveyid:', surveyid);
     return NextResponse.json({ error: 'Invalid survey ID' }, { status: 400 });
   }
 
-  console.log('Attempting to fetch survey with ID:', surveyid);
-
   try {
-    const survey = mockDataStore.getSurveyById(surveyid);
-    console.log('Found survey:', survey);
+    const survey = await prisma.survey.findUnique({
+      where: { id: surveyid },
+      include: {
+        questions: true,
+        responses: true,
+      },
+    });
 
     if (survey) {
       return NextResponse.json(survey);
     } else {
-      console.log('Survey not found for ID:', surveyid);
       return NextResponse.json({ error: 'Survey not found' }, { status: 404 });
     }
   } catch (error) {

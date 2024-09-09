@@ -1,3 +1,4 @@
+//surveys/[id]/page.tsx
 /* eslint-disable @typescript-eslint/restrict-template-expressions */
 "use client"
 
@@ -58,19 +59,23 @@ export default function AdvancedSurveyView() {
       const response = await fetch(`/api/surveys/${surveyId}`)
       if (!response.ok) {
         console.error("Response not OK:", response.status, response.statusText)
-        throw new Error("Failed to fetch survey")
+        const errorText = await response.text()
+        console.error("Error response body:", errorText)
+        throw new Error(`Failed to fetch survey: ${response.statusText}`)
       }
       const data: Survey = await response.json()
       console.log("Fetched survey:", data)
-      setSurvey(data)
-      const privateKey = localStorage.getItem(`survey_key_${surveyId}`)
-      if (privateKey && data.responses) {
-        const decrypted = data.responses.map((response) => ({
-          respondent: response.respondent,
-          answers: decryptAnswers(response.encryptedAnswers, privateKey),
-        }))
-        setDecryptedResponses(decrypted)
+
+      // Parse options for each question
+      const parsedData = {
+        ...data,
+        questions: data.questions.map((q) => ({
+          ...q,
+          options: Array.isArray(q.options) ? q.options : undefined,
+        })),
       }
+
+      setSurvey(parsedData)
     } catch (error) {
       console.error("Error fetching survey:", error)
       toast({
@@ -234,7 +239,7 @@ export default function AdvancedSurveyView() {
               <div key={index} className="mb-6 p-4 bg-base-200 rounded-lg">
                 <h3 className="text-lg font-semibold mb-2">{question.text}</h3>
                 <p className="mb-2">Type: {question.type}</p>
-                {question.options && (
+                {question.options && Array.isArray(question.options) && (
                   <div>
                     <p className="font-semibold">Options:</p>
                     <ul className="list-disc list-inside">

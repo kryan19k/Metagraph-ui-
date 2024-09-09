@@ -146,9 +146,11 @@ export default function SurveyCreationPage() {
       const imageUri =
         data.imageUri instanceof File ? URL.createObjectURL(data.imageUri) : ""
 
-      // Call the mock API function
+      // Call the API function
       const result: SurveyCreationResult = await handleCreateSurvey({
-        creator: address as string, // Use the connected wallet address
+        creator: address as string,
+        title: data.title,
+        description: data.description,
         questions: data.questions,
         tokenReward: data.tokenReward,
         imageUri,
@@ -158,11 +160,11 @@ export default function SurveyCreationPage() {
         tags: Array.isArray(data.tags) ? data.tags : [data.tags],
       })
 
-      console.log("Survey creation result:", result)
+      console.log("Survey created:", result)
 
       toast({
         title: "Survey created successfully",
-        description: `Survey ID: ${result.surveyId.toString()}`,
+        description: `Survey ID: ${result.surveyId}`,
         variant: "default",
       })
 
@@ -171,6 +173,7 @@ export default function SurveyCreationPage() {
 
       // Redirect to the survey details page
       router.push(`/surveys/${result.surveyId}`)
+      console.log(`Redirecting to /surveys/${result.surveyId}`)
     } catch (error) {
       console.error("Error creating survey:", error)
       toast({

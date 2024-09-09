@@ -21,25 +21,33 @@ export function SiteHeader() {
         scrolled && "bg-background/50 "
       )}
     >
-      <div className="container flex h-20 items-center">
-        <MainNav />
-        <MobileNav />
+      <div className="container flex h-20 sm:h-24 items-center justify-between">
+        <div className="flex items-center">
+          <MainNav />
+          <MobileNav />
+        </div>
 
-        <div className="hidden flex-1 items-center justify-between space-x-2 md:flex md:justify-end">
-          <button className="btn btn-outline btn-primary">
-            <Link href="/dashboard">Dashboard</Link>
-          </button>
-          <div className="flex items-center space-x-4">
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Avatar>
-                <AvatarImage
-                  src="https://github.com/shadcn.png"
-                  alt="@shadcn"
-                />
-                <AvatarFallback>CN</AvatarFallback>
-              </Avatar>
-            </motion.div>
-          </div>
+        <div className="flex items-center space-x-4 sm:space-x-6">
+          <Link
+            href="/dashboard"
+            className={cn(
+              buttonVariants({ variant: "ghost", size: "lg" }),
+              "hidden sm:inline-flex text-lg px-4 py-2"
+            )}
+          >
+            Dashboard
+          </Link>
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="hidden sm:block"
+          >
+            <Avatar className="h-10 w-10 sm:h-12 sm:w-12">
+              <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
+              <AvatarFallback>CN</AvatarFallback>
+            </Avatar>
+          </motion.div>
+          <div className="h-10 w-10 sm:h-12 sm:w-12" />
           <ModeToggle />
         </div>
       </div>

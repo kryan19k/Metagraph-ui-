@@ -97,6 +97,13 @@ export default function SurveyParticipationPage() {
     }
   }
 
+  useEffect(() => {
+    void fetchSurveys()
+    if (address) {
+      void fetchUserRewards()
+    }
+  }, [address])
+
   const fetchUserRewards = async () => {
     if (address) {
       try {

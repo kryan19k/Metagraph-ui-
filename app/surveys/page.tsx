@@ -15,6 +15,7 @@ import { WalletBalance } from "@/components/blockchain/wallet-balance"
 import { WalletEnsName } from "@/components/blockchain/wallet-ens-name"
 import { IsWalletConnected } from "@/components/shared/is-wallet-connected"
 import { IsWalletDisconnected } from "@/components/shared/is-wallet-disconnected"
+import SurveyCard from "@/components/surveycard"
 
 interface Survey {
   id: string
@@ -36,27 +37,35 @@ interface Survey {
 
 export default function SurveysPage() {
   const router = useRouter()
-  const [surveys, setSurveys] = useState<Survey[]>([])
+  const [userSurveys, setUserSurveys] = useState<Survey[]>([])
+  const [allSurveys, setAllSurveys] = useState<Survey[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const { address } = useAccount() // Get the connected wallet address
+  const { address } = useAccount()
 
   useEffect(() => {
-    if (address) {
-      void fetchSurveys(address)
-    }
+    void fetchSurveys()
   }, [address])
 
-  const fetchSurveys = async (creatorAddress: string) => {
+  const fetchSurveys = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/surveys?creator=${creatorAddress}`)
-      if (!response.ok) {
-        throw new Error("Failed to fetch surveys")
+      const [userResponse, allResponse] = await Promise.all([
+        address
+          ? fetch(`/api/surveys?creator=${address}`)
+          : Promise.resolve(null),
+        fetch("/api/surveys"),
+      ])
+
+      if (address && userResponse) {
+        if (!userResponse.ok) throw new Error("Failed to fetch user surveys")
+        const userData: Survey[] = await userResponse.json()
+        setUserSurveys(userData)
       }
-      const data: Survey[] = await response.json()
-      console.log("Fetched surveys:", data)
-      setSurveys(data)
+
+      if (!allResponse.ok) throw new Error("Failed to fetch all surveys")
+      const allData: Survey[] = await allResponse.json()
+      setAllSurveys(allData)
     } catch (error) {
       console.error("Error fetching surveys:", error)
       setError("Failed to fetch surveys")
@@ -149,64 +158,46 @@ export default function SurveysPage() {
           </div>
         </IsWalletDisconnected>
 
-        <h1 className="text-3xl font-bold mb-6">All Surveys</h1>
-
+        <h1 className="text-3xl font-bold mb-6">Your Surveys</h1>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {surveys.map((survey) => (
-            <motion.div
-              key={survey.id}
-              className="card bg-base-100 shadow-xl"
-              whileHover={{ scale: 1.05 }}
-              transition={{ type: "spring", stiffness: 300 }}
-            >
-              <div className="card-body">
-                <h2 className="card-title">{survey.title}</h2>
-                <p className="text-sm mb-4">{survey.description}</p>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {survey.tags.map((tag, index) => (
-                    <span key={index} className="badge badge-primary">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-sm mb-4">
-                  <div>Reward: {survey.tokenReward}</div>
-                  <div>
-                    Ends: {new Date(survey.endTime).toLocaleDateString()}
-                  </div>
-                  <div>Max Responses: {survey.maxResponses}</div>
-                  <div>Min Time: {survey.minimumResponseTime}s</div>
-                  <div>Participants: {survey.totalParticipants}</div>
-                  <div>
-                    Avg Time: {survey.averageCompletionTime.toFixed(2)}min
-                  </div>
-                </div>
-                <div className="card-actions justify-end">
-                  <Link
-                    href={`/surveys/${survey.id}`}
-                    className="btn btn-primary btn-sm"
-                  >
-                    <FiEye className="mr-2" /> View
-                  </Link>
-                  <Link
-                    href={`/surveys/edit/${survey.id}`}
-                    className="btn btn-secondary btn-sm"
-                  >
-                    <FiEdit className="mr-2" /> Edit
-                  </Link>
-                  <Link
-                    href={`/surveys/stats/${survey.id}`}
-                    className="btn btn-accent btn-sm"
-                  >
-                    <FiBarChart2 className="mr-2" /> Stats
-                  </Link>
-                </div>
-              </div>
-            </motion.div>
+          {userSurveys.map((survey) => (
+            <SurveyCard key={survey.id} survey={survey} isCreator={true} />
           ))}
         </div>
 
-        {surveys.length === 0 && (
+        {userSurveys.length === 0 && (
+          <div className="alert alert-info mt-6">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              className="stroke-current shrink-0 w-6 h-6"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              ></path>
+            </svg>
+            <span>You haven&apos;t created any surveys yet.</span>
+          </div>
+        )}
+
+        <div className="mt-8">
+          <Link href="/surveyCreation" className="btn btn-primary">
+            Create New Survey
+          </Link>
+        </div>
+
+        <h1 className="text-3xl font-bold mb-6 mt-12">All Available Surveys</h1>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {allSurveys.map((survey) => (
+            <SurveyCard key={survey.id} survey={survey} isCreator={false} />
+          ))}
+        </div>
+
+        {allSurveys.length === 0 && (
           <div className="alert alert-info mt-6">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -224,12 +215,6 @@ export default function SurveysPage() {
             <span>No surveys available at the moment.</span>
           </div>
         )}
-
-        <div className="mt-8">
-          <Link href="/surveyCreation" className="btn btn-primary">
-            Create New Survey
-          </Link>
-        </div>
       </motion.div>
     </div>
   )

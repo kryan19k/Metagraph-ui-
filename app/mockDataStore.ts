@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 export interface Survey {
   id: string;
-  creator: string; // This will store the wallet address of the creator
+  creator: string;
   title: string;
   description: string;
   questions: Array<{
@@ -27,19 +27,31 @@ export interface Survey {
 }
 
 class MockDataStore {
-  private surveys: Survey[] = [];
+  private static instance: MockDataStore;
+  private surveys: Map<string, Survey> = new Map();
+  private userSurveys: Map<string, string[]> = new Map();
   private userRewards: { [address: string]: string } = {};
 
-  constructor() {
+  private constructor() {
     console.log("Initializing MockDataStore");
     this.loadState();
-    if (this.surveys.length === 0) {
+    if (this.surveys.size === 0) {
       this.initializeSampleSurveys();
     }
+    console.log("MockDataStore initialized with surveys:", this.surveys);
+  }
+
+  public static getInstance(): MockDataStore {
+    if (!MockDataStore.instance) {
+      MockDataStore.instance = new MockDataStore();
+    }
+    return MockDataStore.instance;
   }
   
   private initializeSampleSurveys() {
-    const survey1 = this.createSurvey({
+    const sampleCreator = "0x1234567890123456789012345678901234567890";
+    this.createSurvey({
+      creator: sampleCreator,
       title: "User Experience Survey for SurveyChain dApp",
       description: "Help us improve your experience with SurveyChain by providing your feedback.",
       questions: [
@@ -69,35 +81,23 @@ class MockDataStore {
           type: "text"
         }
       ],
-      creator: "0x1234567890123456789012345678901234567890",
-      tokenReward: "2000000000000000000", // 2 tokens in wei
+      tokenReward: "20",
       endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       maxResponses: "100",
       minimumResponseTime: "60",
       tags: ["UX", "Feedback", "DApp"],
-      responses: [],
     });
-    
-    // Update totalParticipants and averageCompletionTime after creation
-    this.surveys.forEach((survey: Survey) => {
-      survey.totalParticipants = Math.floor(Math.random() * 100);
-      survey.averageCompletionTime = Math.floor(Math.random() * 10) + 1;
-    });
-
-    // ... (other sample surveys)
-
-    console.log("Sample surveys created:", survey1 /*, survey2, survey3 */);
-    console.log("MockDataStore initialized with surveys:", this.surveys);
   }
 
   getSurveyById(id: string): Survey | undefined {
     console.log('Searching for survey with id:', id);
-    const survey = this.surveys.find(s => s.id === id);
+    console.log('All surveys:', Array.from(this.surveys.entries()));
+    const survey = this.surveys.get(id);
     console.log('Found survey:', survey);
     return survey;
   }
 
-  createSurvey(surveyData: Omit<Survey, 'id' | 'totalParticipants' | 'averageCompletionTime'>): Survey {
+  createSurvey(surveyData: Omit<Survey, 'id' | 'responses' | 'totalParticipants' | 'averageCompletionTime'>): Survey {
     const newSurvey: Survey = {
       ...surveyData,
       id: uuidv4(),
@@ -105,19 +105,29 @@ class MockDataStore {
       totalParticipants: 0,
       averageCompletionTime: 0
     };
-    this.surveys.push(newSurvey);
-    console.log('New survey created:', newSurvey);
+    this.surveys.set(newSurvey.id, newSurvey);
+    
+    const creatorSurveys = this.userSurveys.get(surveyData.creator) || [];
+    creatorSurveys.push(newSurvey.id);
+    this.userSurveys.set(surveyData.creator, creatorSurveys);
+    
     this.saveState();
+    console.log('Created new survey:', newSurvey);
+    console.log('All surveys after creation:', this.surveys);
     return newSurvey;
   }
 
   private saveState() {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('mockDataStore', JSON.stringify({
-        surveys: this.surveys,
+      const state = {
+        surveys: Array.from(this.surveys.entries()),
+        userSurveys: Array.from(this.userSurveys.entries()),
         userRewards: this.userRewards,
-      }));
+      };
+      localStorage.setItem('mockDataStore', JSON.stringify(state));
     }
+    // For server-side persistence (this is a mock, in a real app you'd use a database)
+    console.log('Saving state:', this.surveys);
   }
 
   private loadState() {
@@ -125,19 +135,23 @@ class MockDataStore {
       const savedState = localStorage.getItem('mockDataStore');
       if (savedState) {
         const parsedState = JSON.parse(savedState);
-        this.surveys = parsedState.surveys;
+        this.surveys = new Map(parsedState.surveys);
+        this.userSurveys = new Map(parsedState.userSurveys);
         this.userRewards = parsedState.userRewards;
       }
     }
+    // For server-side loading (this is a mock, in a real app you'd load from a database)
+    console.log('Loading state:', this.surveys);
   }
 
+
   getAllSurveys(): Survey[] {
-    console.log('Returning all surveys:', this.surveys);
-    return this.surveys;
+    return Array.from(this.surveys.values());
   }
 
   getSurveysByCreator(creatorAddress: string): Survey[] {
-    return this.surveys.filter(survey => survey.creator === creatorAddress);
+    const surveyIds = this.userSurveys.get(creatorAddress) || [];
+    return surveyIds.map(id => this.surveys.get(id)).filter((survey): survey is Survey => survey !== undefined);
   }
 
   addSurveyResponse(surveyId: string, response: { respondent: string; encryptedAnswers: string; completionTime: number }) {
@@ -146,6 +160,7 @@ class MockDataStore {
       survey.responses.push({ respondent: response.respondent, encryptedAnswers: response.encryptedAnswers });
       survey.totalParticipants += 1;
       survey.averageCompletionTime = (survey.averageCompletionTime * (survey.totalParticipants - 1) + response.completionTime) / survey.totalParticipants;
+      this.saveState();
     }
   }
 
@@ -157,8 +172,22 @@ class MockDataStore {
     const currentRewards = BigInt(this.getUserRewards(address));
     const newRewards = currentRewards + BigInt(amount);
     this.userRewards[address] = newRewards.toString();
+    this.saveState();
   }
 }
 
+export const mockDataStore = MockDataStore.getInstance();
 
-export const mockDataStore = new MockDataStore();
+declare global {
+  const mockDataStore: {
+    getSurveyById(id: string): Survey | undefined;
+    createSurvey(surveyData: Omit<Survey, 'id' | 'responses' | 'totalParticipants' | 'averageCompletionTime'>): Survey;
+    getAllSurveys(): Survey[];
+    addSurveyResponse(surveyId: string, response: { respondent: string; encryptedAnswers: string; completionTime: number }): void;
+  };
+}
+
+
+if (typeof window === 'undefined') {
+  (global as any).mockDataStore = mockDataStore;
+}
