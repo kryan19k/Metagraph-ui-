@@ -3,15 +3,15 @@ import { SidebarNavProps } from "@/components/layout/sidebar-nav"
 export const menuSurvey: SidebarNavProps["items"] = [
   {
     label: "Create Survey",
-    href: "/surveyCreation/create",
+    href: "/surveyCreation/",
   },
   {
     label: "My Surveys",
-    href: "/surveyCreation/list",
+    href: "/surveys",
   },
   {
-    label: "Survey Templates",
-    href: "/surveyCreation/templates",
+    label: "Survey Participation",
+    href: "/SurveyParticipation",
   },
   // Add more survey-related menu items as needed
 ]

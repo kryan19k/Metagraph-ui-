@@ -101,7 +101,7 @@ function HeroSection() {
                 Create Survey
               </Link>
               <Link
-                href="/surveyParticipation"
+                href="/SurveyParticipation"
                 className={cn(
                   buttonVariants({ variant: "outline", size: "lg" })
                 )}
@@ -115,7 +115,7 @@ function HeroSection() {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="artboard artboard-horizontal phone-1 overflow-hidden rounded-lg shadow-md"
+              className="artboard artboard-horizontal max-h-full overflow-hidden h-full"
             >
               <Spline scene="https://prod.spline.design/XqU0MxTxcnP0cmnt/scene.splinecode" />
             </motion.div>

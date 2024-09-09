@@ -95,6 +95,7 @@ export default function SurveyCreationPage() {
     isLoading: isAILoading,
     generateAIResponse,
   } = useOpenAIPrompt()
+  const { address } = useAccount() // Get the connected wallet address
 
   const {
     register,
@@ -147,7 +148,7 @@ export default function SurveyCreationPage() {
 
       // Call the mock API function
       const result: SurveyCreationResult = await handleCreateSurvey({
-        creator: "mock-address", // In a real app, this would be the user's address
+        creator: address as string, // Use the connected wallet address
         questions: data.questions,
         tokenReward: data.tokenReward,
         imageUri,
