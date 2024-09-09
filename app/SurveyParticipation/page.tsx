@@ -90,7 +90,19 @@ export default function SurveyParticipationPage() {
         throw new Error(`Failed to fetch surveys: ${response.statusText}`)
       }
       const data: Survey[] = await response.json()
-      setSurveys(data)
+
+      // Parse options for each question in each survey
+      const parsedData = data.map((survey) => ({
+        ...survey,
+        questions: survey.questions.map((q) => ({
+          ...q,
+          options: q.options
+            ? JSON.parse(q.options as unknown as string)
+            : undefined,
+        })),
+      }))
+
+      setSurveys(parsedData)
     } catch (error) {
       console.error("Error fetching surveys:", error)
       setError("Failed to fetch surveys")
@@ -211,18 +223,20 @@ export default function SurveyParticipationPage() {
             control={control}
             render={({ field }) => (
               <div className="form-control">
-                {question.options?.map((option, optionIndex) => (
-                  <label key={optionIndex} className="label cursor-pointer">
-                    <span className="label-text">{option}</span>
-                    <input
-                      type="radio"
-                      className="radio-primary radio"
-                      value={option}
-                      checked={field.value === option}
-                      onChange={() => field.onChange(option)}
-                    />
-                  </label>
-                ))}
+                {question.options &&
+                  Array.isArray(question.options) &&
+                  question.options.map((option, optionIndex) => (
+                    <label key={optionIndex} className="label cursor-pointer">
+                      <span className="label-text">{option}</span>
+                      <input
+                        type="radio"
+                        className="radio-primary radio"
+                        value={option}
+                        checked={field.value === option}
+                        onChange={() => field.onChange(option)}
+                      />
+                    </label>
+                  ))}
               </div>
             )}
           />
@@ -234,22 +248,24 @@ export default function SurveyParticipationPage() {
             control={control}
             render={({ field }) => (
               <div className="form-control">
-                {question.options?.map((option, optionIndex) => (
-                  <label key={optionIndex} className="label cursor-pointer">
-                    <span className="label-text">{option}</span>
-                    <Checkbox
-                      checked={(field.value as string[])?.includes(option)}
-                      onCheckedChange={(checked) => {
-                        const updatedValue = checked
-                          ? [...((field.value as string[]) || []), option]
-                          : ((field.value as string[]) || []).filter(
-                              (item) => item !== option
-                            )
-                        field.onChange(updatedValue)
-                      }}
-                    />
-                  </label>
-                ))}
+                {question.options &&
+                  Array.isArray(question.options) &&
+                  question.options.map((option, optionIndex) => (
+                    <label key={optionIndex} className="label cursor-pointer">
+                      <span className="label-text">{option}</span>
+                      <Checkbox
+                        checked={(field.value as string[])?.includes(option)}
+                        onCheckedChange={(checked) => {
+                          const updatedValue = checked
+                            ? [...((field.value as string[]) || []), option]
+                            : ((field.value as string[]) || []).filter(
+                                (item) => item !== option
+                              )
+                          field.onChange(updatedValue)
+                        }}
+                      />
+                    </label>
+                  ))}
               </div>
             )}
           />

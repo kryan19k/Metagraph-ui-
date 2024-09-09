@@ -96,7 +96,7 @@ const SurveyCard: React.FC<SurveyCardProps> = ({ survey, isCreator }) => {
           )}
           {!isCreator && (
             <Link
-              href={`/surveys/participate/${survey.id}`}
+              href={`/SurveyParticipation/${survey.id}`}
               className="btn btn-secondary btn-sm"
             >
               Participate
