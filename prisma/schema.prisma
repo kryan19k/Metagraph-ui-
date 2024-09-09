@@ -24,3 +24,42 @@ type LitProtocolMetadata {
   accessControlConditions Json[]
   encryptedSymmetricKey   String
 }
+
+model Survey {
+  id                   String   @id @default(uuid()) @map("_id")
+  creator              String
+  title                String
+  description          String
+  tokenReward          String
+  endTime              DateTime
+  maxResponses         String
+  minimumResponseTime  String
+  tags                 String[]
+  imageUri             String?
+  totalParticipants    Int      @default(0)
+  averageCompletionTime Float   @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  questions Question[]
+  responses Response[]
+}
+
+model Question {
+  id       String  @id @default(uuid()) @map("_id")
+  text     String
+  type     String
+  options  String?
+  min      Int?
+  max      Int?
+  surveyId String
+  survey   Survey  @relation(fields: [surveyId], references: [id])
+}
+
+model Response {
+  id               String @id @default(uuid()) @map("_id")
+  respondent       String
+  encryptedAnswers String
+  surveyId         String
+  survey           Survey @relation(fields: [surveyId], references: [id])
+}

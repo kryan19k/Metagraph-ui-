@@ -1,15 +1,29 @@
-import { NextResponse } from 'next/server';
-import { mockDataStore } from '@/app/mockDataStore';
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+//surveys/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
 
-export function GET() {
-  console.log('GET /api/surveys hit');
-  const surveys = mockDataStore.getAllSurveys();
-  console.log('Surveys fetched from mockDataStore:', JSON.stringify(surveys, null, 2));
-  return NextResponse.json(surveys);
-}
+const prisma = new PrismaClient();
 
-export async function POST(request: Request) {
-  const body = await request.json();
-  const newSurvey = mockDataStore.createSurvey(body);
-  return NextResponse.json(newSurvey, { status: 201 });
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const creator = searchParams.get('creator');
+
+  try {
+    if (creator) {
+      const surveys = await prisma.survey.findMany({
+        where: { creator: creator },
+        include: { questions: true }
+      });
+      return NextResponse.json(surveys);
+    } else {
+      const surveys = await prisma.survey.findMany({
+        include: { questions: true }
+      });
+      return NextResponse.json(surveys);
+    }
+  } catch (error) {
+    console.error('Error fetching surveys:', error);
+    return NextResponse.json({ error: 'Failed to fetch surveys' }, { status: 500 });
+  }
 }

@@ -20,6 +20,7 @@ export default function HomePage() {
       <main className="grow">
         <HeroSection />
         <FeaturesSection />
+        <TechnologySection /> {/* Add this new section */}
         <HowItWorksSection />
         <FeaturedSurveysSection />
         <TestimonialsSection />
@@ -101,7 +102,7 @@ function HeroSection() {
                 Create Survey
               </Link>
               <Link
-                href="/surveyParticipation"
+                href="/SurveyParticipation"
                 className={cn(
                   buttonVariants({ variant: "outline", size: "lg" })
                 )}
@@ -110,12 +111,12 @@ function HeroSection() {
               </Link>
             </motion.div>
           </div>
-          <div className="lg:w-1/2 rounded-lg shadow-md">
+          <div className="lg:w-1/2">
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="h-[400px] w-full rounded-md"
+              className="artboard artboard-horizontal max-h-full overflow-hidden h-full"
             >
               <Spline scene="https://prod.spline.design/XqU0MxTxcnP0cmnt/scene.splinecode" />
             </motion.div>
@@ -170,6 +171,38 @@ function FeaturesSection() {
               </div>
             </motion.div>
           ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// Add this new section
+function TechnologySection() {
+  return (
+    <section className="bg-base-100 py-20">
+      <div className="container mx-auto px-4">
+        <div className="card bg-base-200 shadow-xl">
+          <div className="card-body">
+            <h2 className="card-title text-2xl font-bold mb-4">
+              Powered by Constellation Network&apos;s Metagraph
+            </h2>
+            <p className="mb-4">
+              SurveyChain leverages the power of Constellation Network&apos;s
+              Metagraph technology to ensure:
+            </p>
+            <ul className="list-disc list-inside mb-4">
+              <li>Decentralized and secure survey data storage</li>
+              <li>Transparent and immutable survey results</li>
+              <li>Scalable infrastructure for handling large-scale surveys</li>
+              <li>Enhanced data integrity and reliability</li>
+            </ul>
+            <p>
+              By utilizing Constellation&apos;s Metagraph, we provide a
+              cutting-edge platform that revolutionizes the way surveys are
+              conducted and analyzed.
+            </p>
+          </div>
         </div>
       </div>
     </section>

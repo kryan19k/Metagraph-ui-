@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 export interface Survey {
   id: string;
+  creator: string;
   title: string;
   description: string;
   questions: Array<{
@@ -12,21 +13,45 @@ export interface Survey {
     min?: number;
     max?: number;
   }>;
-  creator: string;
   tokenReward: string;
+  endTime: string;
+  maxResponses: string;
+  minimumResponseTime: string;
+  tags: string[];
+  responses: Array<{
+    respondent: string;
+    encryptedAnswers: string;
+  }>;
+  totalParticipants: number;
+  averageCompletionTime: number;
 }
 
 class MockDataStore {
-  private surveys: Survey[] = [];
+  private static instance: MockDataStore;
+  private surveys: Map<string, Survey> = new Map();
+  private userSurveys: Map<string, string[]> = new Map();
   private userRewards: { [address: string]: string } = {};
 
-  constructor() {
+  private constructor() {
     console.log("Initializing MockDataStore");
-    this.initializeSampleSurveys();
+    this.loadState();
+    if (this.surveys.size === 0) {
+      this.initializeSampleSurveys();
+    }
+    console.log("MockDataStore initialized with surveys:", this.surveys);
   }
 
+  public static getInstance(): MockDataStore {
+    if (!MockDataStore.instance) {
+      MockDataStore.instance = new MockDataStore();
+    }
+    return MockDataStore.instance;
+  }
+  
   private initializeSampleSurveys() {
-    const survey1 = this.createSurvey({
+    const sampleCreator = "0x1234567890123456789012345678901234567890";
+    this.createSurvey({
+      creator: sampleCreator,
       title: "User Experience Survey for SurveyChain dApp",
       description: "Help us improve your experience with SurveyChain by providing your feedback.",
       questions: [
@@ -56,106 +81,87 @@ class MockDataStore {
           type: "text"
         }
       ],
-      creator: "0x1234567890123456789012345678901234567890",
-      tokenReward: "2000000000000000000" // 2 tokens in wei
+      tokenReward: "20",
+      endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      maxResponses: "100",
+      minimumResponseTime: "60",
+      tags: ["UX", "Feedback", "DApp"],
     });
-
-    const survey2 = this.createSurvey({
-      title: "Comparison of Decentralized Survey Platforms",
-      description: "Share your experiences with different decentralized survey platforms.",
-      questions: [
-        {
-          id: uuidv4(),
-          text: "Which of the following decentralized survey platforms have you used?",
-          type: "checkbox",
-          options: ["SurveyChain", "DecentralSurvey", "BlockSurvey", "CryptoOpinion", "None of the above"]
-        },
-        {
-          id: uuidv4(),
-          text: "How would you rate the user interface of SurveyChain compared to other platforms?",
-          type: "radio",
-          options: ["Much worse", "Slightly worse", "About the same", "Slightly better", "Much better"]
-        },
-        {
-          id: uuidv4(),
-          text: "What unique feature of SurveyChain sets it apart from other platforms?",
-          type: "text"
-        },
-        {
-          id: uuidv4(),
-          text: "On a scale of 1-10, how satisfied are you with the token reward system in SurveyChain?",
-          type: "scale",
-          min: 1,
-          max: 10
-        }
-      ],
-      creator: "0x1234567890123456789012345678901234567890",
-      tokenReward: "2500000000000000000" // 2.5 tokens in wei
-    });
-
-    const survey3 = this.createSurvey({
-      title: "Blockchain Technology Adoption Survey",
-      description: "Help us understand the adoption and perception of blockchain technology.",
-      questions: [
-        {
-          id: uuidv4(),
-          text: "How familiar are you with blockchain technology?",
-          type: "radio",
-          options: ["Not at all familiar", "Slightly familiar", "Moderately familiar", "Very familiar", "Extremely familiar"]
-        },
-        {
-          id: uuidv4(),
-          text: "Which blockchain platforms have you used? (Select all that apply)",
-          type: "checkbox",
-          options: ["Ethereum", "Binance Smart Chain", "Polkadot", "Cardano", "Solana", "Other"]
-        },
-        {
-          id: uuidv4(),
-          text: "What do you think is the biggest advantage of blockchain technology?",
-          type: "radio",
-          options: ["Decentralization", "Transparency", "Security", "Immutability", "Smart Contracts"]
-        },
-        {
-          id: uuidv4(),
-          text: "In your opinion, what is the biggest challenge for widespread blockchain adoption?",
-          type: "text"
-        },
-        {
-          id: uuidv4(),
-          text: "How likely are you to invest in blockchain projects in the next 12 months?",
-          type: "scale",
-          min: 1,
-          max: 5
-        }
-      ],
-      creator: "0x1234567890123456789012345678901234567890",
-      tokenReward: "3000000000000000000" // 3 tokens in wei
-    });
-
-    console.log("Sample surveys created:", survey1, survey2, survey3);
-    console.log("MockDataStore initialized with surveys:", this.surveys);
   }
 
   getSurveyById(id: string): Survey | undefined {
     console.log('Searching for survey with id:', id);
-    const survey = this.surveys.find(s => s.id === id);
+    console.log('All surveys:', Array.from(this.surveys.entries()));
+    const survey = this.surveys.get(id);
     console.log('Found survey:', survey);
     return survey;
   }
 
-  createSurvey(surveyData: Omit<Survey, 'id'>): Survey {
+  createSurvey(surveyData: Omit<Survey, 'id' | 'responses' | 'totalParticipants' | 'averageCompletionTime'>): Survey {
     const newSurvey: Survey = {
       ...surveyData,
       id: uuidv4(),
+      responses: [],
+      totalParticipants: 0,
+      averageCompletionTime: 0
     };
-    this.surveys.push(newSurvey);
-    console.log('New survey created:', newSurvey);
+    this.surveys.set(newSurvey.id, newSurvey);
+    
+    const creatorSurveys = this.userSurveys.get(surveyData.creator) || [];
+    creatorSurveys.push(newSurvey.id);
+    this.userSurveys.set(surveyData.creator, creatorSurveys);
+    
+    this.saveState();
+    console.log('Created new survey:', newSurvey);
+    console.log('All surveys after creation:', this.surveys);
     return newSurvey;
   }
 
+  private saveState() {
+    if (typeof window !== 'undefined') {
+      const state = {
+        surveys: Array.from(this.surveys.entries()),
+        userSurveys: Array.from(this.userSurveys.entries()),
+        userRewards: this.userRewards,
+      };
+      localStorage.setItem('mockDataStore', JSON.stringify(state));
+    }
+    // For server-side persistence (this is a mock, in a real app you'd use a database)
+    console.log('Saving state:', this.surveys);
+  }
+
+  private loadState() {
+    if (typeof window !== 'undefined') {
+      const savedState = localStorage.getItem('mockDataStore');
+      if (savedState) {
+        const parsedState = JSON.parse(savedState);
+        this.surveys = new Map(parsedState.surveys);
+        this.userSurveys = new Map(parsedState.userSurveys);
+        this.userRewards = parsedState.userRewards;
+      }
+    }
+    // For server-side loading (this is a mock, in a real app you'd load from a database)
+    console.log('Loading state:', this.surveys);
+  }
+
+
   getAllSurveys(): Survey[] {
-    console.log('Returning all surveys:', this.surveys);
-    return this.surveys;
+    return Array.from(this.surveys.values());
+  }
+
+  getSurveysByCreator(creatorAddress: string): Survey[] {
+    const surveyIds = this.userSurveys.get(creatorAddress) || [];
+    return surveyIds.map(id => this.surveys.get(id)).filter((survey): survey is Survey => survey !== undefined);
+  }
+
+  addSurveyResponse(surveyId: string, response: { respondent: string; encryptedAnswers: string; completionTime: number }) {
+    const survey = this.getSurveyById(surveyId);
+    if (survey) {
+      survey.responses.push({ respondent: response.respondent, encryptedAnswers: response.encryptedAnswers });
+      survey.totalParticipants += 1;
+      survey.averageCompletionTime = (survey.averageCompletionTime * (survey.totalParticipants - 1) + response.completionTime) / survey.totalParticipants;
+      this.saveState();
+    }
   }
 
   getUserRewards(address: string): string {
@@ -166,7 +172,22 @@ class MockDataStore {
     const currentRewards = BigInt(this.getUserRewards(address));
     const newRewards = currentRewards + BigInt(amount);
     this.userRewards[address] = newRewards.toString();
+    this.saveState();
   }
 }
 
-export const mockDataStore = new MockDataStore();
+export const mockDataStore = MockDataStore.getInstance();
+
+declare global {
+  const mockDataStore: {
+    getSurveyById(id: string): Survey | undefined;
+    createSurvey(surveyData: Omit<Survey, 'id' | 'responses' | 'totalParticipants' | 'averageCompletionTime'>): Survey;
+    getAllSurveys(): Survey[];
+    addSurveyResponse(surveyId: string, response: { respondent: string; encryptedAnswers: string; completionTime: number }): void;
+  };
+}
+
+
+if (typeof window === 'undefined') {
+  (global as any).mockDataStore = mockDataStore;
+}

@@ -27,8 +27,8 @@ export function MainNav() {
       <div className="flex items-center">
         <Link href="/" className="mr-6 flex items-center space-x-2">
           <LightDarkImage
-            LightImage="/logo-dark.png"
-            DarkImage="/logo-light.png"
+            LightImage="/SC.png"
+            DarkImage="/SC.png"
             alt="SurveyChain"
             className="rounded-full"
             height={32}
@@ -61,8 +61,8 @@ function MainNavMenu() {
                     href="/"
                   >
                     <LightDarkImage
-                      LightImage="/logo-dark.png"
-                      DarkImage="/logo-light.png"
+                      LightImage="/SC.png"
+                      DarkImage="/SC.png"
                       alt="SurveyChain"
                       className="h-16 w-16 rounded-full"
                       height={64}

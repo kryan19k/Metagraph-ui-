@@ -48,6 +48,7 @@ export default function SurveyParticipationPage() {
   const { address } = useAccount()
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [startTime, setStartTime] = useState<number | null>(null)
 
   const schema = z.object({
     answers: z.array(z.union([z.string(), z.number(), z.array(z.string())])),
@@ -70,10 +71,7 @@ export default function SurveyParticipationPage() {
       setIsLoading(true)
       setError(null)
       try {
-        await Promise.all([
-          selectedSurvey?.id && fetchSurveys(selectedSurvey.id),
-          fetchUserRewards(),
-        ])
+        await Promise.all([fetchSurveys(), fetchUserRewards()])
       } catch (error) {
         console.error("Error fetching data:", error)
         setError(error instanceof Error ? error.message : "An error occurred")
@@ -85,19 +83,38 @@ export default function SurveyParticipationPage() {
     void fetchData()
   }, [address])
 
-  const fetchSurveys = async (surveyId: string) => {
+  const fetchSurveys = async () => {
     try {
-      const response = await fetch(`/api/surveys/${surveyId}`)
+      const response = await fetch("/api/surveys")
       if (!response.ok) {
         throw new Error(`Failed to fetch surveys: ${response.statusText}`)
       }
       const data: Survey[] = await response.json()
-      setSurveys(data)
+
+      // Parse options for each question in each survey
+      const parsedData = data.map((survey) => ({
+        ...survey,
+        questions: survey.questions.map((q) => ({
+          ...q,
+          options: q.options
+            ? JSON.parse(q.options as unknown as string)
+            : undefined,
+        })),
+      }))
+
+      setSurveys(parsedData)
     } catch (error) {
       console.error("Error fetching surveys:", error)
-      throw error
+      setError("Failed to fetch surveys")
     }
   }
+
+  useEffect(() => {
+    void fetchSurveys()
+    if (address) {
+      void fetchUserRewards()
+    }
+  }, [address])
 
   const fetchUserRewards = async () => {
     if (address) {
@@ -116,7 +133,7 @@ export default function SurveyParticipationPage() {
   }
 
   const onSubmit = async (data: FormData) => {
-    if (!address || !selectedSurvey) {
+    if (!address || !selectedSurvey || startTime === null) {
       toast({
         title: "Error",
         description:
@@ -129,6 +146,7 @@ export default function SurveyParticipationPage() {
     setIsSubmitting(true)
     try {
       const encryptedAnswers = encryptAnswers(data.answers, "some-public-key")
+      const completionTime = (Date.now() - startTime) / 1000 // in seconds
       const response = await fetch(
         `/api/surveys/${selectedSurvey.id}/responses`,
         {
@@ -137,6 +155,7 @@ export default function SurveyParticipationPage() {
           body: JSON.stringify({
             respondent: address,
             encryptedAnswers,
+            completionTime,
           }),
         }
       )
@@ -149,6 +168,7 @@ export default function SurveyParticipationPage() {
       })
 
       setSelectedSurvey(null)
+      setStartTime(null)
       reset()
       void router.push("/thank-you")
     } catch (error) {
@@ -203,18 +223,20 @@ export default function SurveyParticipationPage() {
             control={control}
             render={({ field }) => (
               <div className="form-control">
-                {question.options?.map((option, optionIndex) => (
-                  <label key={optionIndex} className="label cursor-pointer">
-                    <span className="label-text">{option}</span>
-                    <input
-                      type="radio"
-                      className="radio-primary radio"
-                      value={option}
-                      checked={field.value === option}
-                      onChange={() => field.onChange(option)}
-                    />
-                  </label>
-                ))}
+                {question.options &&
+                  Array.isArray(question.options) &&
+                  question.options.map((option, optionIndex) => (
+                    <label key={optionIndex} className="label cursor-pointer">
+                      <span className="label-text">{option}</span>
+                      <input
+                        type="radio"
+                        className="radio-primary radio"
+                        value={option}
+                        checked={field.value === option}
+                        onChange={() => field.onChange(option)}
+                      />
+                    </label>
+                  ))}
               </div>
             )}
           />
@@ -226,22 +248,24 @@ export default function SurveyParticipationPage() {
             control={control}
             render={({ field }) => (
               <div className="form-control">
-                {question.options?.map((option, optionIndex) => (
-                  <label key={optionIndex} className="label cursor-pointer">
-                    <span className="label-text">{option}</span>
-                    <Checkbox
-                      checked={(field.value as string[])?.includes(option)}
-                      onCheckedChange={(checked) => {
-                        const updatedValue = checked
-                          ? [...((field.value as string[]) || []), option]
-                          : ((field.value as string[]) || []).filter(
-                              (item) => item !== option
-                            )
-                        field.onChange(updatedValue)
-                      }}
-                    />
-                  </label>
-                ))}
+                {question.options &&
+                  Array.isArray(question.options) &&
+                  question.options.map((option, optionIndex) => (
+                    <label key={optionIndex} className="label cursor-pointer">
+                      <span className="label-text">{option}</span>
+                      <Checkbox
+                        checked={(field.value as string[])?.includes(option)}
+                        onCheckedChange={(checked) => {
+                          const updatedValue = checked
+                            ? [...((field.value as string[]) || []), option]
+                            : ((field.value as string[]) || []).filter(
+                                (item) => item !== option
+                              )
+                          field.onChange(updatedValue)
+                        }}
+                      />
+                    </label>
+                  ))}
               </div>
             )}
           />
@@ -358,10 +382,17 @@ export default function SurveyParticipationPage() {
                     <div>Max Responses: {survey.maxResponses}</div>
                     <div>Min Time: {survey.minimumResponseTime}s</div>
                     <div>Participants: {survey.totalParticipants}</div>
-                    <div>Avg Time: {survey.averageCompletionTime}min</div>
+                    <div>
+                      Avg Time: {survey.averageCompletionTime.toFixed(2)}min
+                    </div>
                   </div>
                   <div className="card-actions justify-end mt-4">
-                    <Button onClick={() => setSelectedSurvey(survey)}>
+                    <Button
+                      onClick={() => {
+                        setSelectedSurvey(survey)
+                        setStartTime(Date.now())
+                      }}
+                    >
                       Participate
                     </Button>
                   </div>
