@@ -3,7 +3,6 @@
 import React from "react"
 import Image from "next/image"
 import Link from "next/link"
-import Spline from "@splinetool/react-spline"
 import { motion } from "framer-motion"
 import { FaChartBar, FaCoins, FaUsers } from "react-icons/fa"
 
@@ -109,6 +108,14 @@ function HeroSection() {
               >
                 Explore Surveys
               </Link>
+              <Link
+                href="/metagraph"
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "lg" })
+                )}
+              >
+                Metagraph
+              </Link>
             </motion.div>
           </div>
           <div className="lg:w-1/2">
@@ -117,9 +124,7 @@ function HeroSection() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, delay: 0.2 }}
               className="artboard artboard-horizontal max-h-full overflow-hidden h-full"
-            >
-              <Spline scene="https://prod.spline.design/XqU0MxTxcnP0cmnt/scene.splinecode" />
-            </motion.div>
+            ></motion.div>
           </div>
         </div>
       </div>

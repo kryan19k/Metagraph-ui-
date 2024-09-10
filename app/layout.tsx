@@ -8,6 +8,7 @@ import { siteConfig } from "@/config/site"
 import { fontSans } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
 import { Toaster } from "@/components/ui/toaster"
+import { CombinedWeb3Provider } from "@/components/providers/combinedproviders"
 import RootProvider from "@/components/providers/root-provider"
 import { ThemeProvider } from "@/components/providers/ThemeProvider"
 
