@@ -1,20 +1,16 @@
 "use client"
 
 import React from "react"
-import dynamic from "next/dynamic"
 import Image from "next/image"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { FaChartBar, FaCoins, FaUsers } from "react-icons/fa"
 
+import { siteConfig } from "@/config/site"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { buttonVariants } from "@/components/ui/button"
 import { SurveyList } from "@/components/SurveyList"
-
-const Spline = dynamic(() => import("@splinetool/react-spline"), {
-  ssr: false,
-})
 
 export default function HomePage() {
   return (
@@ -128,9 +124,7 @@ function HeroSection() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, delay: 0.2 }}
               className="artboard artboard-horizontal max-h-full overflow-hidden h-full"
-            >
-              <Spline scene="https://prod.spline.design/XqU0MxTxcnP0cmnt/scene.splinecode" />
-            </motion.div>
+            ></motion.div>
           </div>
         </div>
       </div>
