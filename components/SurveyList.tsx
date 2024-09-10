@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react"
 import Link from "next/link"
 
-import { mockDataStore, Survey } from "@/app/mockDataStore"
+import { Survey } from "@/app/mockDataStore"
 
 export function SurveyList() {
   const [surveys, setSurveys] = useState<Survey[]>([])
@@ -13,17 +13,20 @@ export function SurveyList() {
   useEffect(() => {
     const fetchSurveys = async () => {
       try {
-        console.log("Fetching surveys...")
         setLoading(true)
         const response = await fetch("/api/surveys")
-        console.log("Response status:", response.status)
-        if (!response.ok) throw new Error("Failed to fetch surveys")
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
         const data = await response.json()
-        console.log("Surveys data received:", JSON.stringify(data, null, 2))
         setSurveys(data)
       } catch (error) {
         console.error("Error fetching surveys:", error)
-        setError(error instanceof Error ? error.message : "An error occurred")
+        setError(
+          error instanceof Error
+            ? error.message
+            : "An error occurred while fetching surveys"
+        )
       } finally {
         setLoading(false)
       }
@@ -32,19 +35,12 @@ export function SurveyList() {
     void fetchSurveys()
   }, [])
 
-  console.log(
-    "Rendering SurveyList, surveys:",
-    JSON.stringify(surveys, null, 2)
-  )
-  console.log("Loading:", loading)
-  console.log("Error:", error)
-
   if (loading) {
-    return <div>Loading surveys...</div>
+    return <div aria-live="polite">Loading surveys...</div>
   }
 
   if (error) {
-    return <div>Error: {error}</div>
+    return <div aria-live="assertive">Error: {error}</div>
   }
 
   if (surveys.length === 0) {
@@ -62,6 +58,7 @@ export function SurveyList() {
               <Link
                 href={`/SurveyParticipation/${survey.id}`}
                 className="btn btn-primary"
+                aria-label={`Participate in survey: ${survey.title}`}
               >
                 Participate
               </Link>

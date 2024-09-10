@@ -1,17 +1,20 @@
 "use client"
 
 import React from "react"
+import dynamic from "next/dynamic"
 import Image from "next/image"
 import Link from "next/link"
-import Spline from "@splinetool/react-spline"
 import { motion } from "framer-motion"
 import { FaChartBar, FaCoins, FaUsers } from "react-icons/fa"
 
-import { siteConfig } from "@/config/site"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { buttonVariants } from "@/components/ui/button"
 import { SurveyList } from "@/components/SurveyList"
+
+const Spline = dynamic(() => import("@splinetool/react-spline"), {
+  ssr: false,
+})
 
 export default function HomePage() {
   return (
