@@ -61,5 +61,6 @@ model Response {
   respondent       String
   encryptedAnswers String
   surveyId         String
+  completionTime   Int?
   survey           Survey @relation(fields: [surveyId], references: [id])
 }

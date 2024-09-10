@@ -4,3 +4,5 @@
 **/generated
 .next/**
 tailwind.config.js
+.eslintrc.cjs
+next.config.mjs

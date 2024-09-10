@@ -1,5 +1,10 @@
-import { HTMLAttributes } from "react"
+"use client"
+
+import { HTMLAttributes, useEffect } from "react"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
+import { useAccount } from "wagmi"
+
+import { useStargazerContext } from "@/components/providers/stargazerprovider"
 
 import { Button } from "../ui/button"
 
@@ -11,12 +16,23 @@ interface WalletConnectCustomProps extends HTMLAttributes<HTMLDivElement> {
   labelWrongNetwork?: string
 }
 
-export const WalletConnectCustom = ({
+export const WalletConnectCustom: React.FC<WalletConnectCustomProps> = ({
   className,
   labelConnect = "Connect Wallet",
   labelWrongNetwork = "Wrong Network",
   ...props
 }: WalletConnectCustomProps) => {
+  const { isConnected: isWagmiConnected } = useAccount()
+  const stargazerContext = useStargazerContext()
+
+  useEffect(() => {
+    if (isWagmiConnected && stargazerContext && !stargazerContext.isConnected) {
+      stargazerContext.activate().catch((error) => {
+        console.error("Failed to connect Stargazer wallet:", error)
+      })
+    }
+  }, [isWagmiConnected, stargazerContext])
+
   return (
     <ConnectButton.Custom>
       {({

@@ -109,6 +109,14 @@ function HeroSection() {
               >
                 Explore Surveys
               </Link>
+              <Link
+                href="/metagraph"
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "lg" })
+                )}
+              >
+                Metagraph
+              </Link>
             </motion.div>
           </div>
           <div className="lg:w-1/2">

@@ -35,11 +35,5 @@
     "*.cjs",
     "scripts/test-prisma.ts"
   ],
-  "exclude": [
-    "node_modules",
-    ".next",
-    ".vscode",
-    "generated",
-    "next.config.mjs"
-  ]
+  "exclude": ["node_modules", ".next", ".vscode", "generated"]
 }

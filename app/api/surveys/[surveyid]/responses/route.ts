@@ -2,7 +2,7 @@
 // In /app/api/surveys/[surveyId]/responses/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -14,13 +14,15 @@ export async function POST(
   const { respondent, encryptedAnswers, completionTime } = await req.json();
 
   try {
-    const response = await prisma.response.create({
-      data: {
-        surveyId: surveyid,
-        respondent,
-        encryptedAnswers,
-        completionTime,
-      },
+    const responseData: Prisma.ResponseUncheckedCreateInput = {
+      surveyId: surveyid,
+      respondent,
+      encryptedAnswers,
+      completionTime: completionTime ? parseInt(completionTime, 10) : null,
+    };
+
+    await prisma.response.create({
+      data: responseData,
     });
     return NextResponse.json({ message: 'Response submitted successfully' }, { status: 201 });
   } catch (error) {
