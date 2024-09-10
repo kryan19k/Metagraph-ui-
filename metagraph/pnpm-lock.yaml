@@ -11,6 +11,9 @@ importers:
       '@stardust-collective/dag4':
         specifier: ^2.2.2
         version: 2.2.2(bufferutil@4.0.8)(utf-8-validate@5.0.10)
+      '@stardust-collective/dag4-wallet':
+        specifier: ^2.2.2
+        version: 2.2.2(bufferutil@4.0.8)(utf-8-validate@5.0.10)
       '@stardust-collective/web3-react-stargazer-connector':
         specifier: ^3.0.1
         version: 3.0.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(viem@2.21.4(bufferutil@4.0.8)(utf-8-validate@5.0.10))(wagmi@2.12.9(@tanstack/query-core@5.55.4)(@tanstack/react-query@5.55.4(react@18.3.1))(bufferutil@4.0.8)(react-dom@18.3.1(react@18.3.1))(react-native@0.75.2(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(bufferutil@4.0.8)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10)(viem@2.21.4(bufferutil@4.0.8)(utf-8-validate@5.0.10)))
@@ -5781,7 +5784,7 @@ snapshots:
 
   '@scure/bip32@1.4.0':
     dependencies:
-      '@noble/curves': 1.4.0
+      '@noble/curves': 1.4.2
       '@noble/hashes': 1.4.0
       '@scure/base': 1.1.8
 
@@ -9228,8 +9231,8 @@ snapshots:
 
   webauthn-p256@0.0.5:
     dependencies:
-      '@noble/curves': 1.4.0
-      '@noble/hashes': 1.4.0
+      '@noble/curves': 1.4.2
+      '@noble/hashes': 1.5.0
 
   webextension-polyfill@0.10.0: {}
 

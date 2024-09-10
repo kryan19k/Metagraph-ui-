@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "@stardust-collective/dag4": "^2.2.2",
+    "@stardust-collective/dag4-wallet": "^2.2.2",
     "@stardust-collective/web3-react-stargazer-connector": "^3.0.1",
     "dotenv": "^16.4.5"
   }
